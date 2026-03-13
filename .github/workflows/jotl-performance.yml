@@ -1,0 +1,15 @@
+name: "Performance: jotl"
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/reusable-picofuzz.yml
+    with:
+      target_name: jotl
+      docker_image: 'ghcr.io/polykrate/jotl:latest'
+      docker_cmd: '{TARGET_SOCK}'
+      readiness_pattern: 'Listening on'
