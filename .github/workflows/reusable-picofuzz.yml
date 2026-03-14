@@ -40,11 +40,6 @@ on:
         type: number
         default: 10
         description: "Per-suite timeout in minutes"
-      max_wait_minutes:
-        required: false
-        type: number
-        default: 120
-        description: "Max time to wait for runner before failing"
       test_suites:
         required: false
         type: string
@@ -55,6 +50,10 @@ on:
         type: string
         default: '["forks","no_forks","fallback","safrole","storage","storage_light"]'
         description: "JSON array of minifuzz test suite names"
+
+concurrency:
+  group: "perf-${{ inputs.target_name }}"
+  cancel-in-progress: true
 
 jobs:
   init:
@@ -94,20 +93,6 @@ jobs:
         test: ${{ fromJson(inputs.minifuzz_suites) }}
 
     steps:
-      - name: Check wait time
-        run: |
-          RUN_CREATED=$(gh run view ${{ github.run_id }} --json createdAt -q '.createdAt')
-          CREATED_TS=$(date -d "$RUN_CREATED" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$RUN_CREATED" +%s)
-          NOW_TS=$(date +%s)
-          WAITED=$(( (NOW_TS - CREATED_TS) / 60 ))
-          echo "Waited ${WAITED} minutes for runner"
-          if [ "$WAITED" -gt "${{ inputs.max_wait_minutes }}" ]; then
-            echo "::error::Exceeded max wait time of ${{ inputs.max_wait_minutes }} minutes (waited ${WAITED}m). Failing."
-            exit 1
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}
-
       - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
@@ -142,20 +127,6 @@ jobs:
         test: ${{ fromJson(inputs.test_suites) }}
 
     steps:
-      - name: Check wait time
-        run: |
-          RUN_CREATED=$(gh run view ${{ github.run_id }} --json createdAt -q '.createdAt')
-          CREATED_TS=$(date -d "$RUN_CREATED" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$RUN_CREATED" +%s)
-          NOW_TS=$(date +%s)
-          WAITED=$(( (NOW_TS - CREATED_TS) / 60 ))
-          echo "Waited ${WAITED} minutes for runner"
-          if [ "$WAITED" -gt "${{ inputs.max_wait_minutes }}" ]; then
-            echo "::error::Exceeded max wait time of ${{ inputs.max_wait_minutes }} minutes (waited ${WAITED}m). Failing."
-            exit 1
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}
-
       - uses: actions/checkout@v6
         with:
           submodules: 'recursive'

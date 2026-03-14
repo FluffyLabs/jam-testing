@@ -117,7 +117,6 @@ connections on the Unix socket. Two modes are supported:
 | `docker_platform` | no | `"linux/amd64"` | Platform for `docker pull` |
 | `readiness_pattern` | no | `""` | Regex matched against stdout to detect readiness |
 | `timeout_minutes` | no | `10` | Per-suite timeout |
-| `max_wait_minutes` | no | `120` | Max queuing time before the job self-cancels |
 | `test_suites` | no | all four | JSON array of picofuzz suite names to run |
 
 ## Running locally

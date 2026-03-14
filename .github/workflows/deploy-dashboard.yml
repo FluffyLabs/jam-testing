@@ -15,6 +15,7 @@ on:
       - "Performance: turbojam"
       - "Performance: jamzilla"
       - "Performance: jamzilla-int"
+      - "Performance: jotl"
     types: [completed]
   workflow_dispatch:
 

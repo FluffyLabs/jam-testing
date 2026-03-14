@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.yaml
+
+language: en-US
+
+reviews:
+  request_changes_workflow: true
+  high_level_summary: true
+  auto_review:
+    enabled: true
+    drafts: false
+
+  path_instructions:
+    # --- New-team PRs: workflow file ---
+    - path: ".github/workflows/*-performance.yml"
+      instructions: |
+        This is a per-team performance workflow. Verify:
+        1. The `name:` field follows the exact pattern `"Performance: <team>"`.
+        2. The filename matches `<team>-performance.yml`.
+        3. It uses `uses: ./.github/workflows/reusable-picofuzz.yml`.
+        4. Required inputs are provided: `target_name`, `docker_image`, `docker_cmd`.
+        5. The `target_name` value matches the `<team>` in the filename and workflow name.
+        6. It has both `schedule` (cron) and `workflow_dispatch` triggers.
+        7. The Docker image reference looks like a public registry path (e.g. ghcr.io).
+        8. The `docker_cmd` contains the `{TARGET_SOCK}` placeholder.
+        9. No extra jobs or steps are added beyond `uses: ./.github/workflows/reusable-picofuzz.yml`.
+
+    # --- Dashboard deploy workflow ---
+    - path: ".github/workflows/deploy-dashboard.yml"
+      instructions: |
+        When a new team is added, verify that the team's workflow name
+        (e.g. `"Performance: <team>"`) has been added to the
+        `workflow_run.workflows` trigger list. Every team in `teams/`
+        must have a corresponding entry here.
+
+    # --- Reusable workflow (shared infrastructure) ---
+    - path: ".github/workflows/reusable-picofuzz.yml"
+      instructions: |
+        This is critical shared infrastructure. Changes here affect ALL teams.
+        Review with extra scrutiny:
+        - Docker containers MUST keep `--network none` for isolation.
+        - Memory and CPU limits must not be removed.
+        - Volume mounts should remain minimal and read-only where possible.
+        - `--rm` flag must stay on all containers.
+        - Changes to inputs must be backward-compatible with all existing
+          per-team workflow files.
+
+    # --- Docker orchestration (security-critical) ---
+    - path: "tests/common.ts"
+      instructions: |
+        This file manages Docker container orchestration for untrusted code.
+        Security-critical review:
+        - `--network none` MUST remain in DOCKER_OPTIONS — never remove it.
+        - Memory limits, CPU limits, and ulimits must not be weakened.
+        - `--rm` must stay on all container runs.
+        - Volume mounts must remain minimal; writable mounts should be justified.
+        - The `--stop-signal=SIGKILL` and `--stop-timeout` must not be removed.
+
+    - path: "tests/external-process.ts"
+      instructions: |
+        This manages Docker process lifecycle. Verify that changes don't
+        introduce ways to bypass container isolation or resource limits.
+
+    # --- Team directories ---
+    - path: "teams/**"
+      instructions: |
+        Team directories should be simple. For new teams, verify that:
+        1. The directory name matches the `target_name` in the workflow file.
+        2. No executable scripts or Docker-related files are added that could
+           bypass the standard test pipeline.
+
+    # --- README badge table ---
+    - path: "README.md"
+      instructions: |
+        When a new team is added, verify that a badge row has been added to
+        the "Minifuzz + Performance" table. The badge must follow the pattern:
+        `| <team> | [![Performance: <team>](.../<team>-performance.yml/badge.svg)](.../<team>-performance.yml) |`
+
+    # --- Test suites ---
+    - path: "tests/minifuzz/**"
+      instructions: |
+        Minifuzz tests are conformance gates. Changes should not weaken
+        the validation (e.g. removing assertions, catching errors silently).
+
+    - path: "tests/picofuzz/**"
+      instructions: |
+        Picofuzz tests measure performance. Changes should not affect
+        timing accuracy (e.g. adding unnecessary overhead in the hot path).
+
+    # --- Minifuzz traces ---
+    - path: "minifuzz-traces/**"
+      instructions: |
+        These are pre-captured request-response pairs from the reference
+        implementation (typeberry). They should only change when the STF
+        test data in `picofuzz-stf-data/` is updated. If traces are being
+        modified manually, flag this as suspicious.
+
+  chat:
+    auto_reply: true
