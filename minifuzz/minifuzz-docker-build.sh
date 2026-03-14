@@ -11,12 +11,12 @@ cd "$PROJECT_DIR"
 docker build -f minifuzz/minifuzz.Dockerfile -t minifuzz .
 
 echo "Running minifuzz --help..."
-docker run --rm minifuzz --help
+docker run --rm --network none minifuzz --help
 
 echo "======================================"
 echo " "
 echo " Build finished. Run minifuzz using:"
 echo " "
-echo " $ docker run --rm minifuzz --help"
+echo " $ docker run --rm --network none minifuzz --help"
 echo " "
 echo "======================================"

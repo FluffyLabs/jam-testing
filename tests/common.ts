@@ -5,6 +5,8 @@ const SOCKET_PATH = "/shared/jam_target.sock";
 const SHARED_VOLUME = "jam-ipc-volume";
 
 const DOCKER_OPTIONS = (mem = "512m") => [
+  "--network",
+  "none",
   "--cpu-shares",
   "2048",
   "--cpu-quota",
@@ -19,20 +21,6 @@ const DOCKER_OPTIONS = (mem = "512m") => [
   "nofile=1024:1024",
   "--ulimit",
   "nproc=1024:1024",
-  "--sysctl",
-  "net.core.somaxconn=1024",
-  "--sysctl",
-  "net.ipv4.tcp_tw_reuse=1",
-  "--security-opt",
-  "seccomp=unconfined",
-  "--security-opt",
-  "apparmor=unconfined",
-  "--cap-add",
-  "SYS_NICE",
-  "--cap-add",
-  "SYS_RESOURCE",
-  "--cap-add",
-  "IPC_LOCK",
   "--stop-signal=SIGKILL",
   "--stop-timeout=5",
 ];
@@ -76,7 +64,7 @@ export function createSharedVolume(name = "") {
   execSync(`docker volume create ${volumeName}`);
 
   // Initialize the volume with proper permissions
-  execSync(`docker run --rm -v ${volumeName}:/shared alpine sh -c "mkdir -p /shared && chmod 777 /shared"`);
+  execSync(`docker run --rm --network none -v ${volumeName}:/shared alpine sh -c "mkdir -p /shared && chmod 777 /shared"`);
 
   return {
     name: volumeName,
@@ -108,7 +96,7 @@ async function waitForSocket(volumeName: string, maxWaitMs = 60_000): Promise<vo
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
     try {
-      execSync(`docker run --rm -v ${volumeName}:/shared alpine test -S /shared/jam_target.sock`, {
+      execSync(`docker run --rm --network none -v ${volumeName}:/shared alpine test -S /shared/jam_target.sock`, {
         timeout: 5000,
         stdio: "pipe",
       });
@@ -173,6 +161,8 @@ export async function minifuzz({
     "docker",
     "run",
     "--rm",
+    "--network",
+    "none",
     "-v",
     `${process.cwd()}/picofuzz-conformance-data:/app/picofuzz-conformance-data:ro`,
     "-v",
@@ -211,6 +201,8 @@ export async function picofuzz({
     "docker",
     "run",
     "--rm",
+    "--network",
+    "none",
     "-v",
     `${process.cwd()}/picofuzz-stf-data:/app/picofuzz-stf-data:ro`,
     "-v",

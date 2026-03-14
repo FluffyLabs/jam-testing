@@ -68,12 +68,13 @@ for suite in $SUITES; do
   # Create shared volume
   docker volume rm "$VOLUME" 2>/dev/null || true
   docker volume create "$VOLUME"
-  docker run --rm -v "$VOLUME":/shared alpine sh -c "mkdir -p /shared && chmod 777 /shared"
+  docker run --rm --network none -v "$VOLUME":/shared alpine sh -c "mkdir -p /shared && chmod 777 /shared"
 
   # Start typeberry
   echo "Starting typeberry..."
   docker run --rm -d \
     --name "$CONTAINER" \
+    --network none \
     --memory 512m \
     -v "$VOLUME":/shared \
     "$TYPEBERRY_IMAGE" \
@@ -98,6 +99,7 @@ for suite in $SUITES; do
   # Run picofuzz with capture
   echo "Running picofuzz capture..."
   docker run --rm \
+    --network none \
     -v "$STF_DATA:/app/picofuzz-stf-data/picofuzz-data:ro" \
     -v "$VOLUME":/shared \
     -v "$CAPTURE_DIR":/app/capture \
