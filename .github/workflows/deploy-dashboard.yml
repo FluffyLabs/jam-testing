@@ -51,7 +51,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p artifacts
-          TARGETS="typeberry boka graymatter jam4s jamforge javajam pbnjam pyjamaz turbojam jamzilla jamzilla-int"
+          TARGETS=$(ls -d teams/*/ 2>/dev/null | xargs -n1 basename | tr '\n' ' ')
           BENCHMARKS="fallback safrole storage storage_light"
 
           for target in $TARGETS; do
