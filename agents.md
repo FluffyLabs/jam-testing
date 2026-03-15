@@ -13,6 +13,7 @@ over Unix domain sockets. The suite runs two stages against it:
 
 1. **Minifuzz** — correctness gate (replays captured request-response pairs)
 2. **Picofuzz** — performance measurement (timing only, no response checks)
+3. **Fuzz source** — external fuzzer testing (e.g. graymatter fuzz source against a target)
 
 All inter-container communication uses Unix domain sockets on shared Docker
 volumes. Containers run with `--network none` — no outbound network access.
@@ -84,6 +85,40 @@ derived automatically from the `teams/` directory.
 The workflow `name:` field must follow the pattern `"Performance: <team>"`.
 The filename must be `<team>-performance.yml`.
 
+## Adding a fuzz source workflow
+
+To run an external fuzzer source (e.g. graymatter) against a team's target,
+create `.github/workflows/<team>-fuzz.yml`:
+
+```yaml
+name: "Fuzz: <team>"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  graymatter-source:
+    uses: ./.github/workflows/graymatter-fuzz-source.yml
+    with:
+      target_name: <team>
+      docker_image: '<registry>/<image>:<tag>'
+      docker_cmd: '<command> {TARGET_SOCK}'
+      # Optional:
+      # docker_env: 'KEY=VALUE KEY2=VALUE2'
+      # docker_memory: '512m'
+      # docker_platform: 'linux/amd64'
+      # readiness_pattern: 'Ready'
+      mention: <github-username>
+```
+
+Copy the structure from `typeberry-fuzz.yml`.
+
+The `mention` input controls who gets @-mentioned in the issue body when
+the fuzz job fails. On failure the workflow creates a GitHub issue
+(deduplicated — it won't create a second issue while one is still open).
+The mentioned user receives a GitHub notification without needing any
+special repository access.
+
 ## Checklist for reviewing new-team PRs
 
 - [ ] Workflow file follows the exact pattern of existing ones
@@ -93,6 +128,15 @@ The filename must be `<team>-performance.yml`.
 - [ ] `deploy-dashboard.yml` updated: `workflow_run.workflows` trigger list
 - [ ] Docker image is publicly pullable
 - [ ] Source repo for the Docker image is public (for auditability)
+- [ ] No changes to shared infrastructure (reusable workflow, tests/, etc.)
+
+## Checklist for reviewing fuzz workflow PRs
+
+- [ ] Workflow file references `graymatter-fuzz-source.yml` (or another reusable fuzz source)
+- [ ] Workflow name matches `"Fuzz: <team>"`
+- [ ] Filename is `<team>-fuzz.yml`
+- [ ] `mention` is set to a valid GitHub username
+- [ ] Docker image is publicly pullable
 - [ ] No changes to shared infrastructure (reusable workflow, tests/, etc.)
 
 ## Security constraints
@@ -116,13 +160,16 @@ preserved.
 
 | Path | Purpose |
 |------|---------|
-| `.github/workflows/reusable-picofuzz.yml` | Core reusable workflow |
+| `.github/workflows/reusable-picofuzz.yml` | Core reusable workflow (minifuzz + picofuzz) |
+| `.github/workflows/graymatter-fuzz-source.yml` | Reusable workflow for graymatter fuzz source |
 | `.github/workflows/deploy-dashboard.yml` | Dashboard deploy (has hardcoded team list) |
-| `.github/workflows/<team>-performance.yml` | Per-team workflow |
+| `.github/workflows/<team>-performance.yml` | Per-team performance workflow |
+| `.github/workflows/<team>-fuzz.yml` | Per-team fuzz source workflow |
 | `tests/common.ts` | Docker container orchestration (resource limits, networking) |
 | `tests/external-process.ts` | Docker process lifecycle management |
 | `tests/minifuzz/` | Minifuzz test suites |
 | `tests/picofuzz/` | Picofuzz test suites |
+| `tests/fuzz-source/` | External fuzz source test suites |
 | `minifuzz/` | Minifuzz Docker image (Python) |
 | `picofuzz/` | Picofuzz tool (TypeScript) |
 | `minifuzz-traces/` | Pre-captured traces from typeberry (reference impl) |

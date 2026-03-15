@@ -1,0 +1,15 @@
+name: "Fuzz: typeberry"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  graymatter-source:
+    uses: ./.github/workflows/graymatter-fuzz-source.yml
+    with:
+      target_name: typeberry
+      docker_image: 'ghcr.io/fluffylabs/typeberry:latest'
+      docker_cmd: '--version=1 fuzz-target {TARGET_SOCK}'
+      docker_env: 'JAM_LOG=log'
+      readiness_pattern: 'PVM Backend'
+      mention: tomusdrw
