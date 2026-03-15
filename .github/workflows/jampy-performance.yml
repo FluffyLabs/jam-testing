@@ -1,0 +1,14 @@
+name: "Performance: jampy"
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/reusable-picofuzz.yml
+    with:
+      target_name: jampy
+      docker_image: 'ghcr.io/dakk/jampy-target:0.7.2'
+      docker_cmd: '--socket-file {TARGET_SOCK}'
