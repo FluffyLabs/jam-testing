@@ -2,6 +2,8 @@ name: "Fuzz: typeberry"
 
 on:
   workflow_dispatch:
+  push:
+    branches: [graymatter-fuzz-source]  # temporary: remove before merge
 
 jobs:
   graymatter-source:
