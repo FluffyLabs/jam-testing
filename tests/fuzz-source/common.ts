@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { createSharedVolume, fuzzSource, getSourceConfig, getTargetConfig, startTarget } from "../common.js";
+import {
+  chmodSocket,
+  createSharedVolume,
+  fuzzSource,
+  getSourceConfig,
+  getTargetConfig,
+  startTarget,
+} from "../common.js";
 import type { ExternalProcess } from "../external-process.js";
 
 const timeout = 10 * 60 * 1000;
@@ -37,6 +44,7 @@ export function runFuzzSourceTest(name: string) {
         sharedVolume: sharedVolume.name,
         config: targetConfig,
       });
+      chmodSocket(sharedVolume.name);
       sourceProc = await fuzzSource({
         timeout,
         sharedVolume: sharedVolume.name,

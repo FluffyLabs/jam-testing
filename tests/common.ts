@@ -136,6 +136,13 @@ async function waitForSocket(volumeName: string, maxWaitMs = 60_000): Promise<vo
   throw new Error(`Socket did not appear within ${maxWaitMs}ms`);
 }
 
+export function chmodSocket(volumeName: string) {
+  execSync(`docker run --rm --network none -v ${volumeName}:/shared alpine chmod 777 ${SOCKET_PATH}`, {
+    timeout: 10_000,
+    stdio: "pipe",
+  });
+}
+
 export async function startTarget({
   timeout,
   sharedVolume = SHARED_VOLUME,
