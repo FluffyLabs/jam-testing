@@ -106,7 +106,6 @@ jobs:
           SOURCE_NAME: graymatter
           SOURCE_IMAGE: 'ghcr.io/jambrains/graymatter/gm:conformance-fuzzer-latest'
           SOURCE_CMD: 'fuzz-m1-source --num-blocks 100 --target {TARGET_SOCK}'
-          SOURCE_USER: '1000:1000'
 
   notify:
     needs: [init, fuzz]
