@@ -1,0 +1,15 @@
+name: "Performance: new-jamneration"
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/reusable-picofuzz.yml
+    with:
+      target_name: new-jamneration
+      docker_image: 'ghcr.io/new-jamneration/new-jamneration-target:latest'
+      docker_cmd: '{TARGET_SOCK}'
+      docker_env: 'USE_MINI_REDIS=true'

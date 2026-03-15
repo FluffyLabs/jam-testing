@@ -32,6 +32,7 @@ and the suite runs two stages against it:
 | jamzilla | [![Performance: jamzilla](https://github.com/FluffyLabs/jam-testing/actions/workflows/jamzilla-performance.yml/badge.svg)](https://github.com/FluffyLabs/jam-testing/actions/workflows/jamzilla-performance.yml) |
 | jamzilla-int | [![Performance: jamzilla-int](https://github.com/FluffyLabs/jam-testing/actions/workflows/jamzilla-int-performance.yml/badge.svg)](https://github.com/FluffyLabs/jam-testing/actions/workflows/jamzilla-int-performance.yml) |
 | jampy | [![Performance: jampy](https://github.com/FluffyLabs/jam-testing/actions/workflows/jampy-performance.yml/badge.svg)](https://github.com/FluffyLabs/jam-testing/actions/workflows/jampy-performance.yml) |
+| new-jamneration | [![Performance: new-jamneration](https://github.com/FluffyLabs/jam-testing/actions/workflows/new-jamneration-performance.yml/badge.svg)](https://github.com/FluffyLabs/jam-testing/actions/workflows/new-jamneration-performance.yml) |
 
 ## How it works
 
