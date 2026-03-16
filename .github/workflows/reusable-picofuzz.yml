@@ -50,6 +50,11 @@ on:
         type: string
         default: '["forks","no_forks","fallback","safrole","storage","storage_light"]'
         description: "JSON array of minifuzz test suite names"
+      picofuzz_repeat:
+        required: false
+        type: number
+        default: 10
+        description: "Number of times to repeat picofuzz tests"
 
 concurrency:
   group: "perf-${{ inputs.target_name }}"
@@ -152,6 +157,7 @@ jobs:
           TARGET_ENV: ${{ inputs.docker_env }}
           TARGET_READINESS_PATTERN: ${{ inputs.readiness_pattern }}
           TARGET_MEMORY: ${{ inputs.docker_memory }}
+          PICOFUZZ_REPEAT: ${{ inputs.picofuzz_repeat }}
 
       - name: Upload CSV results
         uses: actions/upload-artifact@v7
