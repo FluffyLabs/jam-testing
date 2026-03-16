@@ -4,8 +4,7 @@ on:
   schedule:
     - cron: '0 18 * * *'
   workflow_dispatch:
-  push:
-    branches: [graymatter-fuzz-source]  # temporary: remove before merge
+  pull_request:
 
 jobs:
   graymatter-source:

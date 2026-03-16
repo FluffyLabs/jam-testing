@@ -2,8 +2,9 @@ name: "Fuzz: new-jamneration"
 
 on:
   workflow_dispatch:
-  push:
-    branches: [graymatter-fuzz-source]  # temporary: remove before merge
+  pull_request:
+    paths:
+      - '.github/workflows/new-jamneration-fuzz.yml'
 
 jobs:
   demo:

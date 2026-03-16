@@ -2,8 +2,9 @@ name: "Fuzz: jam4s"
 
 on:
   workflow_dispatch:
-  push:
-    branches: [graymatter-fuzz-source]  # temporary: remove before merge
+  pull_request:
+    paths:
+      - '.github/workflows/jam4s-fuzz.yml'
 
 jobs:
   demo:

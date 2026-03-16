@@ -2,8 +2,9 @@ name: "Fuzz: jamzilla-int"
 
 on:
   workflow_dispatch:
-  push:
-    branches: [graymatter-fuzz-source]  # temporary: remove before merge
+  pull_request:
+    paths:
+      - '.github/workflows/jamzilla-int-fuzz.yml'
 
 jobs:
   demo:
