@@ -1,24 +1,8 @@
 name: Deploy Dashboard
 
 on:
-  # Run after any performance workflow completes
-  workflow_run:
-    workflows:
-      - "Performance: typeberry"
-      - "Performance: boka"
-      - "Performance: graymatter"
-      - "Performance: jam4s"
-      - "Performance: jamforge"
-      - "Performance: javajam"
-      - "Performance: pbnjam"
-      - "Performance: pyjamaz"
-      - "Performance: turbojam"
-      - "Performance: jamzilla"
-      - "Performance: jamzilla-int"
-      - "Performance: jotl"
-      - "Performance: jampy"
-      - "Performance: new-jamneration"
-    types: [completed]
+  schedule:
+    - cron: '0 8,20 * * *'
   workflow_dispatch:
 
 permissions:
