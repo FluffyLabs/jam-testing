@@ -38,7 +38,7 @@ on:
       num_blocks:
         required: false
         type: number
-        default: 10000
+        default: 1000
         description: "Number of blocks for the fuzzer to generate"
       mention:
         required: false

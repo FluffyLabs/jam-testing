@@ -35,11 +35,6 @@ on:
         type: string
         default: ""
         description: "Regex for log-based readiness (if empty, uses socket probe)"
-      timeout_minutes:
-        required: false
-        type: number
-        default: 10
-        description: "Per-suite timeout in minutes"
       test_suites:
         required: false
         type: string
@@ -86,7 +81,7 @@ jobs:
     needs: init
     name: "Minifuzz ${{ matrix.test }} (${{ inputs.target_name }})"
     runs-on: [self-hosted, perf]
-    timeout-minutes: ${{ inputs.timeout_minutes }}
+    timeout-minutes: 10
     strategy:
       fail-fast: true
       matrix:
@@ -120,7 +115,7 @@ jobs:
     needs: [init, minifuzz]
     name: "Picofuzz ${{ matrix.test }} (${{ inputs.target_name }})"
     runs-on: [self-hosted, perf]
-    timeout-minutes: ${{ inputs.timeout_minutes }}
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:

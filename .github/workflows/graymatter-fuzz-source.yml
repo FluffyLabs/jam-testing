@@ -23,7 +23,7 @@ on:
       docker_memory:
         required: false
         type: string
-        default: "512m"
+        default: "2048m"
         description: "Docker memory limit for target"
       docker_platform:
         required: false
