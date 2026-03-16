@@ -94,7 +94,18 @@ export class Socket {
     return await response;
   }
 
-  close() {
-    this.socket.end();
+  async close() {
+    const socket = this.socket;
+    socket.end();
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => {
+        socket.destroy();
+        resolve();
+      }, 5000);
+      socket.once("close", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
   }
 }
