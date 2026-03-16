@@ -23,7 +23,7 @@ on:
       docker_memory:
         required: false
         type: string
-        default: "512m"
+        default: "2048m"
         description: "Docker memory limit for target"
       docker_platform:
         required: false
@@ -35,11 +35,11 @@ on:
         type: string
         default: ""
         description: "Regex for target log-based readiness (if empty, uses socket probe)"
-      timeout_minutes:
+      num_blocks:
         required: false
         type: number
-        default: 30
-        description: "Job timeout in minutes"
+        default: 10000
+        description: "Number of blocks for the fuzzer to generate"
       mention:
         required: false
         type: string
@@ -78,7 +78,7 @@ jobs:
     needs: init
     name: "Demo fuzz (graymatter → ${{ inputs.target_name }})"
     runs-on: [self-hosted, demo]
-    timeout-minutes: ${{ inputs.timeout_minutes }}
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v6
@@ -105,7 +105,7 @@ jobs:
           TARGET_MEMORY: ${{ inputs.docker_memory }}
           SOURCE_NAME: graymatter
           SOURCE_IMAGE: 'ghcr.io/jambrains/graymatter/gm:conformance-fuzzer-latest'
-          SOURCE_CMD: 'fuzz-m1-source --num-blocks 10000 --target {TARGET_SOCK}'
+          SOURCE_CMD: 'fuzz-m1-source --num-blocks ${{ inputs.num_blocks }} --target {TARGET_SOCK}'
 
   notify:
     needs: [init, fuzz]
