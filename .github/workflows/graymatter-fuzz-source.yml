@@ -44,7 +44,12 @@ on:
         required: false
         type: number
         default: 10000
-        description: "Number of blocks for the fuzzer to generate"
+        description: "Number of blocks for the fuzzer to generate per run"
+      num_runs:
+        required: false
+        type: number
+        default: 1
+        description: "Number of fuzzer runs (source is restarted, target keeps running)"
       mention:
         required: false
         type: string
@@ -103,6 +108,7 @@ jobs:
         run: npm exec tsx -- --test tests/fuzz-source/fuzz.test.ts
         env:
           TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
+          NUM_RUNS: ${{ inputs.num_runs }}
           TARGET_NAME: ${{ inputs.target_name }}
           TARGET_IMAGE: ${{ inputs.docker_image }}
           TARGET_CMD: ${{ inputs.docker_cmd }}

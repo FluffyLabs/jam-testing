@@ -11,6 +11,7 @@ import {
 import type { ExternalProcess } from "../external-process.js";
 
 const timeout = getTimeoutMs(30);
+const numRuns = Number(process.env.NUM_RUNS) || 1;
 
 export function runFuzzSourceTest(name: string) {
   const targetConfig = getTargetConfig();
@@ -46,14 +47,17 @@ export function runFuzzSourceTest(name: string) {
         config: targetConfig,
       });
       chmodSocket(sharedVolume.name);
-      sourceProc = await fuzzSource({
-        timeout,
-        sharedVolume: sharedVolume.name,
-        config: sourceConfig,
-      });
 
-      await sourceProc.cleanExit;
-      console.info("Fuzz source completed successfully");
+      for (let run = 1; run <= numRuns; run++) {
+        console.info(`Starting fuzz run ${run}/${numRuns}`);
+        sourceProc = await fuzzSource({
+          timeout,
+          sharedVolume: sharedVolume.name,
+          config: sourceConfig,
+        });
+        await sourceProc.cleanExit;
+        console.info(`Fuzz run ${run}/${numRuns} completed successfully`);
+      }
     });
   });
 }

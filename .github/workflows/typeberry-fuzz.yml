@@ -16,7 +16,8 @@ jobs:
       docker_env: 'JAM_LOG=log'
       readiness_pattern: 'PVM Backend'
       timeout_minutes: 30
-      num_blocks: 90000
+      num_blocks: 10000
+      num_runs: 9
       mention: tomusdrw
 
   demo:
@@ -27,5 +28,4 @@ jobs:
       docker_cmd: '--version=1 fuzz-target {TARGET_SOCK}'
       docker_env: 'JAM_LOG=log'
       readiness_pattern: 'PVM Backend'
-      num_blocks: 30000
       mention: tomusdrw
