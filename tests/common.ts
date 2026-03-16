@@ -4,6 +4,16 @@ import { ExternalProcess } from "./external-process.js";
 const SOCKET_PATH = "/shared/jam_target.sock";
 const SHARED_VOLUME = "jam-ipc-volume";
 
+/**
+ * Read test timeout from TIMEOUT_MINUTES env var (set by GHA workflows).
+ * Falls back to `defaultMinutes` for local development.
+ */
+export function getTimeoutMs(defaultMinutes: number): number {
+  const envVal = process.env.TIMEOUT_MINUTES;
+  const minutes = envVal ? Number(envVal) : defaultMinutes;
+  return minutes * 60 * 1000;
+}
+
 const DOCKER_OPTIONS = (mem = "512m") => [
   "--network",
   "none",

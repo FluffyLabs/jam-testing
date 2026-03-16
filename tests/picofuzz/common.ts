@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { createSharedVolume, getTargetConfig, picofuzz, startTarget } from "../common.js";
+import { createSharedVolume, getTargetConfig, getTimeoutMs, picofuzz, startTarget } from "../common.js";
 import type { ExternalProcess } from "../external-process.js";
 
-const timeout = 10 * 60 * 1000;
+const timeout = getTimeoutMs(10);
 
 export function runPicofuzzTest(
   name: string,

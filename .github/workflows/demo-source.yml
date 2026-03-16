@@ -40,6 +40,11 @@ on:
         type: number
         default: 1000
         description: "Number of blocks for the fuzzer to generate"
+      timeout_minutes:
+        required: false
+        type: number
+        default: 10
+        description: "Job timeout in minutes"
       mention:
         required: false
         type: string
@@ -78,7 +83,7 @@ jobs:
     needs: init
     name: "Demo fuzz (graymatter → ${{ inputs.target_name }})"
     runs-on: [self-hosted, demo]
-    timeout-minutes: 10
+    timeout-minutes: ${{ inputs.timeout_minutes }}
 
     steps:
       - uses: actions/checkout@v6
@@ -97,6 +102,7 @@ jobs:
       - name: Run fuzz source test
         run: npm exec tsx -- --test tests/fuzz-source/fuzz.test.ts
         env:
+          TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
           TARGET_NAME: ${{ inputs.target_name }}
           TARGET_IMAGE: ${{ inputs.docker_image }}
           TARGET_CMD: ${{ inputs.docker_cmd }}

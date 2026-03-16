@@ -5,11 +5,12 @@ import {
   fuzzSource,
   getSourceConfig,
   getTargetConfig,
+  getTimeoutMs,
   startTarget,
 } from "../common.js";
 import type { ExternalProcess } from "../external-process.js";
 
-const timeout = 10 * 60 * 1000;
+const timeout = getTimeoutMs(30);
 
 export function runFuzzSourceTest(name: string) {
   const targetConfig = getTargetConfig();

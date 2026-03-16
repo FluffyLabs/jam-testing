@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { createSharedVolume, getTargetConfig, minifuzz, startTarget, type TargetConfig } from "../common.js";
+import { createSharedVolume, getTargetConfig, getTimeoutMs, minifuzz, startTarget, type TargetConfig } from "../common.js";
 import type { ExternalProcess } from "../external-process.js";
 
-const timeout = 5 * 60 * 1000;
+const timeout = getTimeoutMs(5);
 
 export function runMinifuzzTest(
   name: string,
