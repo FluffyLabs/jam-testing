@@ -8,7 +8,7 @@ export function runPicofuzzTest(
   name: string,
   directory: string,
   {
-    repeat = Number(process.env.PICOFUZZ_REPEAT) || 10,
+    repeat = 10,
     ignore = [],
   }: {
     repeat?: number;
