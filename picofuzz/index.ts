@@ -55,7 +55,7 @@ async function main() {
     console.error("Error:", error);
     process.exit(1);
   } finally {
-    socket.close();
+    await socket.close();
   }
 }
 
