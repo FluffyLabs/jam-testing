@@ -1,0 +1,14 @@
+name: "Fuzz: pbnjam"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [graymatter-fuzz-source]  # temporary: remove before merge
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: pbnjam
+      docker_image: 'shimonchick/pbnjam-fuzzer-target:latest'
+      docker_cmd: '--socket {TARGET_SOCK}'

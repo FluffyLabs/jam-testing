@@ -1,0 +1,16 @@
+name: "Fuzz: jotl"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [graymatter-fuzz-source]  # temporary: remove before merge
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: jotl
+      docker_image: 'ghcr.io/polykrate/jotl:latest'
+      docker_cmd: '{TARGET_SOCK}'
+      docker_memory: '2048m'
+      readiness_pattern: 'Listening on'

@@ -1,0 +1,15 @@
+name: "Fuzz: jamforge"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [graymatter-fuzz-source]  # temporary: remove before merge
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: jamforge
+      docker_image: 'ghcr.io/philoniare/jam-forge:latest'
+      docker_cmd: '--socket-path {TARGET_SOCK}'
+      docker_memory: '4096m'

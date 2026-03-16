@@ -1,0 +1,14 @@
+name: "Fuzz: graymatter"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [graymatter-fuzz-source]  # temporary: remove before merge
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: graymatter
+      docker_image: 'ghcr.io/jambrains/graymatter/gm:conformance-fuzzer-latest'
+      docker_cmd: 'fuzz-m1-target --stay-open --listen {TARGET_SOCK}'

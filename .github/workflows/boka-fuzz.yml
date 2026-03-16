@@ -1,0 +1,14 @@
+name: "Fuzz: boka"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [graymatter-fuzz-source]  # temporary: remove before merge
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: boka
+      docker_image: 'acala/boka:latest'
+      docker_cmd: 'fuzz target --socket-path {TARGET_SOCK}'

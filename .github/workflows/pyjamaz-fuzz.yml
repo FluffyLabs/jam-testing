@@ -1,0 +1,14 @@
+name: "Fuzz: pyjamaz"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [graymatter-fuzz-source]  # temporary: remove before merge
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: pyjamaz
+      docker_image: 'jamdottech/pyjamaz:latest'
+      docker_cmd: 'fuzzer target --db-path=/tmp/pyjamaz_fuzzer_db --socket-path={TARGET_SOCK}'

@@ -1,0 +1,14 @@
+name: "Fuzz: jampy"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [graymatter-fuzz-source]  # temporary: remove before merge
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: jampy
+      docker_image: 'ghcr.io/dakk/jampy-target:0.7.2'
+      docker_cmd: '--socket-file {TARGET_SOCK}'

@@ -1,0 +1,15 @@
+name: "Fuzz: javajam"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [graymatter-fuzz-source]  # temporary: remove before merge
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: javajam
+      docker_image: 'ghcr.io/methodfive/javajam:latest-amd64'
+      docker_cmd: '-Dskip.warmup=true fuzz {TARGET_SOCK}'
+      docker_memory: '8192m'
