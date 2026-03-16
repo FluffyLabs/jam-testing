@@ -1,0 +1,151 @@
+name: "Demo Fuzz Source"
+
+on:
+  workflow_call:
+    inputs:
+      target_name:
+        required: true
+        type: string
+        description: "Target implementation name (e.g. typeberry)"
+      docker_image:
+        required: true
+        type: string
+        description: "Full Docker image reference for the target"
+      docker_cmd:
+        required: true
+        type: string
+        description: "Target command with {TARGET_SOCK} placeholder"
+      docker_env:
+        required: false
+        type: string
+        default: ""
+        description: "Space-separated KEY=VALUE pairs for target"
+      docker_memory:
+        required: false
+        type: string
+        default: "512m"
+        description: "Docker memory limit for target"
+      docker_platform:
+        required: false
+        type: string
+        default: "linux/amd64"
+        description: "Platform flag for target docker pull"
+      readiness_pattern:
+        required: false
+        type: string
+        default: ""
+        description: "Regex for target log-based readiness (if empty, uses socket probe)"
+      timeout_minutes:
+        required: false
+        type: number
+        default: 30
+        description: "Job timeout in minutes"
+      mention:
+        required: false
+        type: string
+        default: ""
+        description: "GitHub username to @-mention on failure (e.g. tomusdrw). If empty, no issue is created."
+
+concurrency:
+  group: "demo-graymatter-${{ inputs.target_name }}"
+  cancel-in-progress: true
+
+jobs:
+  init:
+    name: "Init demo (graymatter → ${{ inputs.target_name }})"
+    runs-on: [self-hosted, demo]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pull target Docker image
+        run: docker pull --platform=${{ inputs.docker_platform }} ${{ inputs.docker_image }}
+
+      - name: Pull graymatter fuzzer image
+        run: docker pull --platform=linux/amd64 ghcr.io/jambrains/graymatter/gm:conformance-fuzzer-latest
+
+  fuzz:
+    needs: init
+    name: "Demo fuzz (graymatter → ${{ inputs.target_name }})"
+    runs-on: [self-hosted, demo]
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run fuzz source test
+        run: npm exec tsx -- --test tests/fuzz-source/fuzz.test.ts
+        env:
+          TARGET_NAME: ${{ inputs.target_name }}
+          TARGET_IMAGE: ${{ inputs.docker_image }}
+          TARGET_CMD: ${{ inputs.docker_cmd }}
+          TARGET_ENV: ${{ inputs.docker_env }}
+          TARGET_READINESS_PATTERN: ${{ inputs.readiness_pattern }}
+          TARGET_MEMORY: ${{ inputs.docker_memory }}
+          SOURCE_NAME: graymatter
+          SOURCE_IMAGE: 'ghcr.io/jambrains/graymatter/gm:conformance-fuzzer-latest'
+          SOURCE_CMD: 'fuzz-m1-source --num-blocks 10000 --target {TARGET_SOCK}'
+
+  notify:
+    needs: [init, fuzz]
+    if: ${{ failure() && inputs.mention != '' }}
+    name: "Notify demo (${{ inputs.target_name }})"
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Check for existing open issue
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count=$(gh issue list \
+            --repo "${{ github.repository }}" \
+            --label "fuzz-failure" \
+            --label "demo" \
+            --label "${{ inputs.target_name }}" \
+            --state open \
+            --json number \
+            --jq 'length')
+          echo "open_count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Create failure issue
+        if: steps.check.outputs.open_count == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "Demo fuzz failure: graymatter → ${{ inputs.target_name }}" \
+            --label "fuzz-failure,demo,${{ inputs.target_name }}" \
+            --body "$(cat <<EOF
+          cc @${{ inputs.mention }}
+
+          The demo graymatter fuzz source test against **${{ inputs.target_name }}** failed.
+
+          **Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          Please investigate and close this issue once resolved.
+          EOF
+          )"

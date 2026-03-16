@@ -16,3 +16,14 @@ jobs:
       readiness_pattern: 'PVM Backend'
       docker_memory: '2048m'
       mention: tomusdrw
+
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: typeberry
+      docker_image: 'ghcr.io/fluffylabs/typeberry:latest'
+      docker_cmd: '--version=1 fuzz-target {TARGET_SOCK}'
+      docker_env: 'JAM_LOG=log'
+      readiness_pattern: 'PVM Backend'
+      docker_memory: '2048m'
+      mention: tomusdrw
