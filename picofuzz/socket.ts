@@ -96,16 +96,26 @@ export class Socket {
 
   async close() {
     const socket = this.socket;
-    socket.end();
+
     await new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
+      let timeout: ReturnType<typeof setTimeout> | null = null;
+      // resolve promise when socket is fully closed.
+      socket.once("close", () => {
+        if (timeout !== null) {
+          clearTimeout(timeout);
+        }
+        resolve();
+      });
+
+      // send FIN to the socket
+      socket.end();
+
+      // when the other end does not terminate as well
+      // we forcefully destroy
+      timeout = setTimeout(() => {
         socket.destroy();
         resolve();
       }, 5000);
-      socket.once("close", () => {
-        clearTimeout(timeout);
-        resolve();
-      });
     });
   }
 }
