@@ -1,12 +1,25 @@
 name: "Fuzz: turbojam"
 
 on:
+  schedule:
+    - cron: '0 18 * * *'
   workflow_dispatch:
   pull_request:
     paths:
       - '.github/workflows/turbojam-fuzz.yml'
 
 jobs:
+  graymatter-source:
+    uses: ./.github/workflows/graymatter-fuzz-source.yml
+    with:
+      target_name: turbojam
+      docker_image: 'r2rationality/turbojam-fuzz:latest'
+      docker_cmd: 'fuzzer-api {TARGET_SOCK}'
+      timeout_minutes: 60
+      num_blocks: 100000
+      num_runs: 10
+      mention: sierkov
+
   demo:
     uses: ./.github/workflows/demo-source.yml
     with:
