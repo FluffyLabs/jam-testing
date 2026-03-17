@@ -1,0 +1,17 @@
+name: "Performance: jampy-recompiler"
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/jampy-recompiler-performance.yml'
+
+jobs:
+  test:
+    uses: ./.github/workflows/reusable-picofuzz.yml
+    with:
+      target_name: jampy-recompiler
+      docker_image: 'ghcr.io/dakk/jampy-target:0.7.2'
+      docker_cmd: '--use-recompiler --socket-file {TARGET_SOCK}'

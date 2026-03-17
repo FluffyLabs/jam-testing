@@ -1,0 +1,16 @@
+name: "Fuzz: jampy-recompiler"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/jampy-recompiler-fuzz.yml'
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: jampy-recompiler
+      docker_image: 'ghcr.io/dakk/jampy-target:0.7.2'
+      docker_cmd: '--use-recompiler --socket-file {TARGET_SOCK}'
+      mention: dakk
