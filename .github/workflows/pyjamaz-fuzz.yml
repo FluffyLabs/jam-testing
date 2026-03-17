@@ -6,6 +6,10 @@ on:
     paths:
       - '.github/workflows/pyjamaz-fuzz.yml'
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   demo:
     uses: ./.github/workflows/demo-source.yml

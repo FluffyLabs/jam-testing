@@ -6,6 +6,10 @@ on:
   workflow_dispatch:
   pull_request:
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   graymatter-source:
     uses: ./.github/workflows/graymatter-fuzz-source.yml

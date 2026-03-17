@@ -8,6 +8,10 @@ on:
     paths:
       - '.github/workflows/turbojam-fuzz.yml'
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   graymatter-source:
     uses: ./.github/workflows/graymatter-fuzz-source.yml
