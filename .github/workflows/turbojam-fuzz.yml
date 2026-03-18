@@ -19,7 +19,7 @@ jobs:
       target_name: turbojam
       docker_image: 'r2rationality/turbojam-fuzz:latest'
       docker_cmd: 'fuzzer-api {TARGET_SOCK}'
-      timeout_minutes: 60
+      timeout_minutes: 1380
       num_blocks: 100000
       num_runs: 10
       mention: sierkov
