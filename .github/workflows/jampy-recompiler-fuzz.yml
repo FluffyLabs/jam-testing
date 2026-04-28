@@ -16,5 +16,5 @@ jobs:
     with:
       target_name: jampy-recompiler
       docker_image: 'ghcr.io/dakk/jampy-target:0.7.2'
-      docker_cmd: '--use-recompiler --socket-file {TARGET_SOCK}'
+      docker_cmd: '--use-recompiler --sock {TARGET_SOCK}'
       mention: dakk

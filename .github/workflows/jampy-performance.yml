@@ -14,4 +14,4 @@ jobs:
     with:
       target_name: jampy
       docker_image: 'ghcr.io/dakk/jampy-target:0.7.2'
-      docker_cmd: '--socket-file {TARGET_SOCK}'
+      docker_cmd: '--sock {TARGET_SOCK}'
