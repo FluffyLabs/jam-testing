@@ -1,4 +1,4 @@
-import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
+import { type ChildProcessWithoutNullStreams, execSync, spawn } from "node:child_process";
 import { promises, setTimeout } from "node:timers";
 
 const SHUTDOWN_GRACE_PERIOD = 15_000;
@@ -15,14 +15,16 @@ export class ExternalProcess {
     spawned.stderr.on("data", (data: Buffer) => {
       console.error(`[${processName}] ${data.toString()}`);
     });
-    return new ExternalProcess(processName, spawned);
+    return new ExternalProcess(processName, spawned, args);
   }
 
   public readonly cleanExit: Promise<void>;
+  private killedIntentionally = false;
 
   private constructor(
     private readonly processName: string,
     private readonly spawned: ChildProcessWithoutNullStreams,
+    private readonly args: string[],
   ) {
     this.cleanExit = new Promise((resolve, reject) => {
       spawned.on("error", (err) => {
@@ -32,7 +34,17 @@ export class ExternalProcess {
       spawned.on("exit", (code, signal) => {
         if (code === 0) {
           resolve();
-        } else if (code !== 143 && signal !== "SIGTERM" && signal !== "SIGKILL" && signal !== "SIGPIPE") {
+        } else if (this.killedIntentionally) {
+          console.error(`[${this.processName}] Process terminated intentionally.`);
+          resolve();
+        } else if (signal === "SIGKILL" || code === 137) {
+          // SIGKILL or exit code 137 (128+9) without intentional kill strongly suggests OOM.
+          const oomDetail = this.checkDockerOom();
+          reject(
+            `[${this.processName}] Process was killed by SIGKILL (code: ${code}, signal: ${signal}). ` +
+              `This most likely indicates an out-of-memory (OOM) kill.${oomDetail}`,
+          );
+        } else if (code !== 143 && signal !== "SIGTERM" && signal !== "SIGPIPE") {
           reject(`[${this.processName}] Process exited (code: ${code}, signal: ${signal})`);
         } else {
           console.error(`[${this.processName}] Process had to be killed.`);
@@ -40,6 +52,32 @@ export class ExternalProcess {
         }
       });
     });
+  }
+
+  /**
+   * Try to get OOM details from Docker if this was a `docker run` command.
+   * Returns additional detail string to append to error messages.
+   */
+  private checkDockerOom(): string {
+    if (this.args[0] !== "run") return "";
+
+    // Find the container image and try to get memory stats from dmesg
+    try {
+      const dmesg = execSync("dmesg --time-format iso 2>/dev/null | tail -30 || journalctl -k -n 30 --no-pager 2>/dev/null || true", {
+        timeout: 5_000,
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+      const oomLines = dmesg
+        .split("\n")
+        .filter((line) => /oom|out of memory|killed process/i.test(line));
+      if (oomLines.length > 0) {
+        return `\nKernel OOM messages:\n${oomLines.join("\n")}`;
+      }
+    } catch {
+      // dmesg may not be available, that's fine
+    }
+    return "";
   }
 
   async waitForMessage(pattern: RegExp, check: (match: RegExpMatchArray) => boolean = () => true) {
@@ -64,6 +102,7 @@ export class ExternalProcess {
       console.warn("Process already terminated. Ignoring.");
     }
 
+    this.killedIntentionally = true;
     console.log(`[${this.processName}] Terminating`);
     const grace = promises.setTimeout(SHUTDOWN_GRACE_PERIOD);
     this.spawned.stdin?.end();

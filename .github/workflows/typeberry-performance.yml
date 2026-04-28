@@ -5,6 +5,9 @@ on:
     - cron: '0 6 * * *'
   workflow_dispatch:
   pull_request:
+    # we want to run typeberry on each and every PR just as a sanity check
+    # paths:
+    #   - '.github/workflows/typeberry-performance.yml'
 
 jobs:
   test:
