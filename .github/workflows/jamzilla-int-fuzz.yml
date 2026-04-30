@@ -17,7 +17,7 @@ jobs:
     uses: ./.github/workflows/demo-source.yml
     with:
       target_name: jamzilla-int
-      docker_image: 'ghcr.io/ascrivener/jamzilla-tiny:edge'
+      docker_image: 'ghcr.io/ascrivener/jamzilla:edge'
       docker_cmd: '-socket {TARGET_SOCK}'
       docker_env: 'PVM_MODE=interpreter'
       mention: ascrivener

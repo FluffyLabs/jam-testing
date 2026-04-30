@@ -13,6 +13,6 @@ jobs:
     uses: ./.github/workflows/reusable-picofuzz.yml
     with:
       target_name: jamzilla
-      docker_image: 'ghcr.io/ascrivener/jamzilla-tiny:edge'
+      docker_image: 'ghcr.io/ascrivener/jamzilla:edge'
       docker_cmd: '-socket {TARGET_SOCK}'
       docker_env: 'PVM_MODE=jit'
