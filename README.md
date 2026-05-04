@@ -88,7 +88,8 @@ connections on the Unix socket. Two modes are supported:
    The harness sets the
    [standard target packaging](https://github.com/davxy/jam-conformance/tree/main/fuzz-proto#standard-target-packaging)
    env vars on every target container: `JAM_FUZZ=1`, `JAM_FUZZ_SPEC=tiny`,
-   `JAM_FUZZ_DATA_PATH=/shared/data`, `JAM_FUZZ_SOCK_PATH=/shared/jam_target.sock`.
+   `JAM_FUZZ_DATA_PATH=/shared/data`, `JAM_FUZZ_SOCK_PATH=/shared/jam_target.sock`,
+   `JAM_FUZZ_LOG_LEVEL=debug`.
    New targets should read the socket path from `JAM_FUZZ_SOCK_PATH`. For
    backwards compatibility, the legacy `{TARGET_SOCK}` placeholder in
    `docker_cmd` is still substituted with the same socket path, so existing

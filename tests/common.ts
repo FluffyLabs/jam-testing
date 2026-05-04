@@ -1,4 +1,5 @@
-import { execSync } from "node:child_process";
+import type { ExecFileSyncOptions } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { ExternalProcess } from "./external-process.js";
 
 const SOCKET_PATH = "/shared/jam_target.sock";
@@ -18,6 +19,7 @@ const STANDARD_TARGET_ENV: Record<string, string> = {
   JAM_FUZZ_SPEC: "tiny",
   JAM_FUZZ_DATA_PATH: DATA_PATH,
   JAM_FUZZ_SOCK_PATH: SOCKET_PATH,
+  JAM_FUZZ_LOG_LEVEL: "debug",
 };
 
 /**
@@ -105,28 +107,41 @@ export function getTargetConfig(): TargetConfig {
   };
 }
 
+function docker(args: string[], options: ExecFileSyncOptions = {}) {
+  return execFileSync("docker", args, options);
+}
+
 export function createSharedVolume(name = "") {
   const volumeName = `${SHARED_VOLUME}${name}`;
   // Clean up any existing volume and create a fresh one
   try {
-    execSync(`docker volume rm ${volumeName}`);
+    docker(["volume", "rm", volumeName]);
   } catch {
     // Volume might not exist, ignore
   }
-  execSync(`docker volume create ${volumeName}`);
+  docker(["volume", "create", volumeName]);
 
   // Initialize the volume with proper permissions and prepare the
   // JAM_FUZZ_DATA_PATH directory used by standard target packaging.
-  execSync(
-    `docker run --rm --network none -v ${volumeName}:/shared alpine sh -c "mkdir -p /shared ${DATA_PATH} && chmod 777 /shared ${DATA_PATH}"`,
-  );
+  docker([
+    "run",
+    "--rm",
+    "--network",
+    "none",
+    "-v",
+    `${volumeName}:/shared`,
+    "alpine",
+    "sh",
+    "-c",
+    `mkdir -p /shared ${DATA_PATH} && chmod 777 /shared ${DATA_PATH}`,
+  ]);
 
   return {
     name: volumeName,
     stop: () => {
       // Clean up the shared volume
       try {
-        execSync(`docker volume rm ${volumeName}`);
+        docker(["volume", "rm", volumeName]);
       } catch {
         // Volume might be in use, ignore
       }
@@ -158,7 +173,7 @@ async function waitForSocket(volumeName: string, maxWaitMs = 60_000): Promise<vo
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
     try {
-      execSync(`docker run --rm --network none -v ${volumeName}:/shared alpine test -S /shared/jam_target.sock`, {
+      docker(["run", "--rm", "--network", "none", "-v", `${volumeName}:/shared`, "alpine", "test", "-S", SOCKET_PATH], {
         timeout: 5000,
         stdio: "pipe",
       });
@@ -177,14 +192,25 @@ async function waitForSocket(volumeName: string, maxWaitMs = 60_000): Promise<vo
  * Initialize starts from a clean cache, matching official testing behavior.
  */
 export function clearDataDir(volumeName: string) {
-  execSync(
-    `docker run --rm --network none -v ${volumeName}:/shared alpine sh -c "rm -rf ${DATA_PATH} && mkdir -p ${DATA_PATH} && chmod 777 ${DATA_PATH}"`,
+  docker(
+    [
+      "run",
+      "--rm",
+      "--network",
+      "none",
+      "-v",
+      `${volumeName}:/shared`,
+      "alpine",
+      "sh",
+      "-c",
+      `rm -rf ${DATA_PATH} && mkdir -p ${DATA_PATH} && chmod 777 ${DATA_PATH}`,
+    ],
     { timeout: 10_000, stdio: "pipe" },
   );
 }
 
 export function chmodSocket(volumeName: string) {
-  execSync(`docker run --rm --network none -v ${volumeName}:/shared alpine chmod 777 ${SOCKET_PATH}`, {
+  docker(["run", "--rm", "--network", "none", "-v", `${volumeName}:/shared`, "alpine", "chmod", "777", SOCKET_PATH], {
     timeout: 10_000,
     stdio: "pipe",
   });
