@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import {
   chmodSocket,
+  clearDataDir,
   createSharedVolume,
   fuzzSource,
   getSourceConfig,
@@ -49,6 +50,11 @@ export function runFuzzSourceTest(name: string) {
       chmodSocket(sharedVolume.name);
 
       for (let run = 1; run <= numRuns; run++) {
+        // Each fuzz run is a new session; per the standard target packaging
+        // spec, official testing wipes JAM_FUZZ_DATA_PATH between sessions.
+        if (run > 1) {
+          clearDataDir(sharedVolume.name);
+        }
         console.info(`Starting fuzz run ${run}/${numRuns}`);
         sourceProc = await fuzzSource({
           timeout,

@@ -1,8 +1,26 @@
-import { execSync } from "node:child_process";
+import type { ExecFileSyncOptions } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { ExternalProcess } from "./external-process.js";
 
 const SOCKET_PATH = "/shared/jam_target.sock";
+const DATA_PATH = "/shared/data";
 const SHARED_VOLUME = "jam-ipc-volume";
+
+/**
+ * Standard target packaging env vars per
+ * https://github.com/davxy/jam-conformance/tree/main/fuzz-proto#standard-target-packaging
+ *
+ * Targets that have migrated read these directly. The legacy {TARGET_SOCK}
+ * cmd-line substitution is still applied as a fallback for targets that
+ * haven't migrated yet.
+ */
+const STANDARD_TARGET_ENV: Record<string, string> = {
+  JAM_FUZZ: "1",
+  JAM_FUZZ_SPEC: "tiny",
+  JAM_FUZZ_DATA_PATH: DATA_PATH,
+  JAM_FUZZ_SOCK_PATH: SOCKET_PATH,
+  JAM_FUZZ_LOG_LEVEL: "debug",
+};
 
 /**
  * Read test timeout from TIMEOUT_MINUTES env var (set by GHA workflows).
@@ -89,25 +107,41 @@ export function getTargetConfig(): TargetConfig {
   };
 }
 
+function docker(args: string[], options: ExecFileSyncOptions = {}) {
+  return execFileSync("docker", args, options);
+}
+
 export function createSharedVolume(name = "") {
   const volumeName = `${SHARED_VOLUME}${name}`;
   // Clean up any existing volume and create a fresh one
   try {
-    execSync(`docker volume rm ${volumeName}`);
+    docker(["volume", "rm", volumeName]);
   } catch {
     // Volume might not exist, ignore
   }
-  execSync(`docker volume create ${volumeName}`);
+  docker(["volume", "create", volumeName]);
 
-  // Initialize the volume with proper permissions
-  execSync(`docker run --rm --network none -v ${volumeName}:/shared alpine sh -c "mkdir -p /shared && chmod 777 /shared"`);
+  // Initialize the volume with proper permissions and prepare the
+  // JAM_FUZZ_DATA_PATH directory used by standard target packaging.
+  docker([
+    "run",
+    "--rm",
+    "--network",
+    "none",
+    "-v",
+    `${volumeName}:/shared`,
+    "alpine",
+    "sh",
+    "-c",
+    `mkdir -p /shared ${DATA_PATH} && chmod 777 /shared ${DATA_PATH}`,
+  ]);
 
   return {
     name: volumeName,
     stop: () => {
       // Clean up the shared volume
       try {
-        execSync(`docker volume rm ${volumeName}`);
+        docker(["volume", "rm", volumeName]);
       } catch {
         // Volume might be in use, ignore
       }
@@ -123,6 +157,13 @@ function buildEnvArgs(envStr: string): string[] {
     .flatMap((pair) => ["-e", pair]);
 }
 
+function buildTargetEnvArgs(envStr: string): string[] {
+  // Standard packaging vars first; user-provided TARGET_ENV is applied last
+  // so teams can override (docker `-e` is last-wins).
+  const standard = Object.entries(STANDARD_TARGET_ENV).flatMap(([k, v]) => ["-e", `${k}=${v}`]);
+  return [...standard, ...buildEnvArgs(envStr)];
+}
+
 function buildCmdArgs(cmdTemplate: string): string[] {
   const cmd = cmdTemplate.replace(/\{TARGET_SOCK\}/g, SOCKET_PATH);
   return cmd.split(/\s+/).filter((s) => s.length > 0);
@@ -132,7 +173,7 @@ async function waitForSocket(volumeName: string, maxWaitMs = 60_000): Promise<vo
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
     try {
-      execSync(`docker run --rm --network none -v ${volumeName}:/shared alpine test -S /shared/jam_target.sock`, {
+      docker(["run", "--rm", "--network", "none", "-v", `${volumeName}:/shared`, "alpine", "test", "-S", SOCKET_PATH], {
         timeout: 5000,
         stdio: "pipe",
       });
@@ -146,8 +187,30 @@ async function waitForSocket(volumeName: string, maxWaitMs = 60_000): Promise<vo
   throw new Error(`Socket did not appear within ${maxWaitMs}ms`);
 }
 
+/**
+ * Wipe the JAM_FUZZ_DATA_PATH directory between fuzzing sessions so the next
+ * Initialize starts from a clean cache, matching official testing behavior.
+ */
+export function clearDataDir(volumeName: string) {
+  docker(
+    [
+      "run",
+      "--rm",
+      "--network",
+      "none",
+      "-v",
+      `${volumeName}:/shared`,
+      "alpine",
+      "sh",
+      "-c",
+      `rm -rf ${DATA_PATH} && mkdir -p ${DATA_PATH} && chmod 777 ${DATA_PATH}`,
+    ],
+    { timeout: 10_000, stdio: "pipe" },
+  );
+}
+
 export function chmodSocket(volumeName: string) {
-  execSync(`docker run --rm --network none -v ${volumeName}:/shared alpine chmod 777 ${SOCKET_PATH}`, {
+  docker(["run", "--rm", "--network", "none", "-v", `${volumeName}:/shared`, "alpine", "chmod", "777", SOCKET_PATH], {
     timeout: 10_000,
     stdio: "pipe",
   });
@@ -162,7 +225,7 @@ export async function startTarget({
   sharedVolume?: string;
   config: TargetConfig;
 }) {
-  const envArgs = buildEnvArgs(config.env);
+  const envArgs = buildTargetEnvArgs(config.env);
   const cmdArgs = buildCmdArgs(config.cmd);
 
   const proc = ExternalProcess.spawn(
