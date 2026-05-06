@@ -1,0 +1,23 @@
+name: "Demo (tiny): jamzig"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/jamzig-demo-tiny.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: jamzig
+      docker_image: 'docker.io/jamzig/jam-conformance-target:latest'
+      spec: tiny
+      mention: boymaas

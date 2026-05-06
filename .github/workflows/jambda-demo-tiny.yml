@@ -1,0 +1,23 @@
+name: "Demo (tiny): jambda"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/jambda-demo-tiny.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: jambda
+      docker_image: 'ghcr.io/archelabs/jambda-fuzz-target:latest'
+      spec: tiny
+      mention: libingjiang47

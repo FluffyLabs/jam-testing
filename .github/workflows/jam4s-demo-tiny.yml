@@ -1,0 +1,26 @@
+name: "Demo (tiny): jam4s"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/jam4s-demo-tiny.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: jam4s
+      docker_image: 'jamforscala/jam4s:0.7.2-rc.11-amd64'
+      docker_cmd: '--fuzz --seed 0 --socket {TARGET_SOCK}'
+      docker_env: 'CONFIG_FILE=app/config/node-dev.conf'
+      docker_memory: '4096m'
+      spec: tiny
+      mention: celadari

@@ -1,0 +1,25 @@
+name: "Demo (tiny): vinwolf"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/vinwolf-demo-tiny.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: vinwolf
+      docker_image: 'ghcr.io/bloppan/vinwolf:latest'
+      docker_cmd: '--fuzz {TARGET_SOCK}'
+      readiness_pattern: 'listening on'
+      spec: tiny
+      mention: bloppan

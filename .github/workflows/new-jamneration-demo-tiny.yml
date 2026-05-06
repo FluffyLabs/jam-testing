@@ -1,0 +1,25 @@
+name: "Demo (tiny): new-jamneration"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/new-jamneration-demo-tiny.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: new-jamneration
+      docker_image: 'ghcr.io/new-jamneration/new-jamneration-target:latest'
+      docker_cmd: '{TARGET_SOCK}'
+      docker_env: 'USE_MINI_REDIS=true'
+      spec: tiny
+      mention: YCC3741

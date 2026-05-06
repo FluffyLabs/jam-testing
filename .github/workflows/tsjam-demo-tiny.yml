@@ -1,0 +1,23 @@
+name: "Demo (tiny): tsjam"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/tsjam-demo-tiny.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: tsjam
+      docker_image: 'ghcr.io/vekexasia/tsjam-target:0.7.2'
+      spec: tiny
+      mention: vekexasia

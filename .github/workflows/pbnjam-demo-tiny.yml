@@ -1,0 +1,25 @@
+name: "Demo (tiny): pbnjam"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/pbnjam-demo-tiny.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: pbnjam
+      docker_image: 'shimonchick/pbnjam-fuzzer-target:latest'
+      docker_cmd: '--socket {TARGET_SOCK}'
+      docker_memory: '4096m'
+      spec: tiny
+      mention: mikirov

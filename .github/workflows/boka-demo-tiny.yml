@@ -1,0 +1,24 @@
+name: "Demo (tiny): boka"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/boka-demo-tiny.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: boka
+      docker_image: 'acala/boka:latest'
+      docker_cmd: 'fuzz target --socket-path {TARGET_SOCK}'
+      spec: tiny
+      mention: xlc

@@ -1,0 +1,24 @@
+name: "Demo (tiny): pyjamaz"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/pyjamaz-demo-tiny.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: pyjamaz
+      docker_image: 'jamdottech/pyjamaz:latest'
+      docker_cmd: 'fuzzer target --db-path=/tmp/pyjamaz_fuzzer_db --socket-path={TARGET_SOCK}'
+      spec: tiny
+      mention: emielsebastiaan
