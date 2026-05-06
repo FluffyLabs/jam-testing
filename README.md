@@ -17,8 +17,10 @@ and the suite runs three stages against it:
 - **Fuzz testing** — one implementation (the "source") generates random
   blocks and another (the "target") must process them without crashing.
   Currently [graymatter](https://github.com/jambrains/graymatter) is
-  available as a fuzz source. Every team gets a demo fuzz job (5 000 blocks
-  on a shared runner); dedicated long-running runs are available on request.
+  available as a fuzz source, run against both the JAM `tiny` and `full`
+  specs. Every team gets two demo fuzz jobs (5 000 blocks each on a shared
+  runner — one per spec); dedicated long-running runs cover both specs in
+  a single matrix.
 
 ## Status
 
@@ -62,7 +64,10 @@ source command by the workflow.
 If your team wants extended fuzz runs (more blocks, multiple runs, dedicated
 runner), reach out by commenting on
 [issue #1](https://github.com/FluffyLabs/jam-testing/issues/1). We'll set up
-a dedicated fuzz workflow with a self-hosted runner labeled for your team.
+a dedicated `<team>-fuzz.yml` workflow with a self-hosted runner labeled for
+your team. Long-running workflows run a `[tiny, full]` matrix on a single
+badge — both specs share one workflow file, so size `num_blocks` so the
+per-spec budget × 2 fits your runner's wall-time window.
 
 ## How it works
 
@@ -100,18 +105,20 @@ connections on the Unix socket. Two modes are supported:
 
    The harness sets the
    [standard target packaging](https://github.com/davxy/jam-conformance/tree/main/fuzz-proto#standard-target-packaging)
-   env vars on every target container: `JAM_FUZZ=1`, `JAM_FUZZ_SPEC=tiny`,
+   env vars on every target container: `JAM_FUZZ=1`, `JAM_FUZZ_SPEC=<tiny|full>`,
    `JAM_FUZZ_DATA_PATH=/shared/data`, `JAM_FUZZ_SOCK_PATH=/shared/jam_target.sock`,
-   `JAM_FUZZ_LOG_LEVEL=debug`.
+   `JAM_FUZZ_LOG_LEVEL=debug`. `JAM_FUZZ_SPEC` is set per-workflow; your image
+   must support both `tiny` and `full` and pick the right one from the env var.
    New targets should read the socket path from `JAM_FUZZ_SOCK_PATH`. For
-   backwards compatibility, the legacy `{TARGET_SOCK}` placeholder in
-   `docker_cmd` is still substituted with the same socket path, so existing
-   targets keep working unchanged. Anything in `docker_env` is appended after
-   the standard vars and can override them.
+   backwards compatibility (tiny only), the legacy `{TARGET_SOCK}` placeholder
+   in `docker_cmd` is still substituted with the same socket path, so existing
+   targets keep working unchanged. Full-spec workflows omit `docker_cmd` —
+   targets are invoked with no spec-related CLI args. Anything in `docker_env`
+   is appended after the standard vars and can override them.
    `JAM_FUZZ_DATA_PATH` is wiped between sequential fuzz-source runs to match
    official testing's fresh-init behavior.
 
-2. **Create a workflow file** at `.github/workflows/<team>-performance.yml`:
+2. **Create the performance workflow** at `.github/workflows/<team>-performance.yml`:
 
    ```yaml
    name: "Performance: myteam"
@@ -135,10 +142,76 @@ connections on the Unix socket. Two modes are supported:
          # readiness_pattern: 'Server ready'
    ```
 
-3. **Create a team directory** at `teams/<team>/` for any team-specific
+3. **Create the two demo fuzz workflows.** One for `tiny`, one for `full`.
+   Tiny may pass `docker_cmd` (legacy `{TARGET_SOCK}` substitution allowed);
+   full **must not** pass `docker_cmd` (env-only invocation):
+
+   ```yaml
+   # .github/workflows/myteam-demo-tiny.yml
+   name: "Demo (tiny): myteam"
+
+   on:
+     schedule:
+       - cron: '0 18 * * *'
+     workflow_dispatch:
+     pull_request:
+       paths:
+         - '.github/workflows/myteam-demo-tiny.yml'
+         - '.github/workflows/demo-source.yml'
+
+   permissions:
+     contents: read
+     issues: write
+
+   jobs:
+     demo:
+       uses: ./.github/workflows/demo-source.yml
+       with:
+         target_name: myteam
+         docker_image: 'ghcr.io/myorg/myimage:latest'
+         docker_cmd: 'fuzz --socket {TARGET_SOCK}'   # tiny: legacy placeholder OK
+         spec: tiny
+         mention: yourgithub
+   ```
+
+   ```yaml
+   # .github/workflows/myteam-demo-full.yml
+   # Identical to demo-tiny except: spec: full and no docker_cmd.
+   # Full-spec runs are env-only — your target must read JAM_FUZZ_SOCK_PATH.
+   name: "Demo (full): myteam"
+
+   on:
+     schedule:
+       - cron: '0 18 * * *'
+     workflow_dispatch:
+     pull_request:
+       paths:
+         - '.github/workflows/myteam-demo-full.yml'
+         - '.github/workflows/demo-source.yml'
+
+   permissions:
+     contents: read
+     issues: write
+
+   jobs:
+     demo:
+       uses: ./.github/workflows/demo-source.yml
+       with:
+         target_name: myteam
+         docker_image: 'ghcr.io/myorg/myimage:latest'
+         spec: full
+         mention: yourgithub
+   ```
+
+   Your target image must support both `tiny` and `full` (selected via
+   `JAM_FUZZ_SPEC`). The `--spec=<value>` argument is passed to the
+   graymatter source by the workflow; your target receives no spec-related
+   CLI args.
+
+4. **Create a team directory** at `teams/<team>/` for any team-specific
    scripts or data you might add later.
 
-4. **Open a PR** and trigger the workflow via `workflow_dispatch` to verify
+5. **Open a PR** and trigger the workflows via `workflow_dispatch` to verify
    everything works.
 
 ### Workflow inputs reference
@@ -154,6 +227,7 @@ connections on the Unix socket. Two modes are supported:
 | `readiness_pattern` | no | `""` | Regex matched against stdout to detect readiness |
 | `timeout_minutes` | no | `10` | Per-suite timeout |
 | `test_suites` | no | all four | JSON array of picofuzz suite names to run |
+| `spec` | no | `"tiny"` | (Demo / long-run only) JAM spec to test against (`tiny` or `full`). The reusable workflow sets `JAM_FUZZ_SPEC` env on the target and appends `--spec=<value>` to the graymatter source. |
 
 ## Running locally
 
@@ -208,11 +282,14 @@ up-to-date.
 
 ```
 .github/workflows/
-  reusable-picofuzz.yml       # Core reusable workflow (minifuzz + picofuzz)
-  demo-source.yml             # Reusable demo fuzz source workflow
-  graymatter-fuzz-source.yml  # Reusable long-running fuzz source workflow
-  <team>-performance.yml      # Per-team performance workflow files
-  <team>-fuzz.yml             # Per-team fuzz workflow files
+  reusable-picofuzz.yml         # Core reusable workflow (minifuzz + picofuzz)
+  demo-source.yml               # Reusable demo fuzz source workflow (tiny|full)
+  graymatter-fuzz-source.yml    # Reusable long-running fuzz source workflow
+  <team>-performance.yml        # Per-team performance workflow files
+  <team>-demo-tiny.yml          # Per-team demo fuzz against the tiny spec
+  <team>-demo-full.yml          # Per-team demo fuzz against the full spec
+  <team>-fuzz.yml               # Per-team long-running fuzz (matrix over [tiny, full])
+                                #   — only for teams with dedicated runners
 minifuzz/                     # Minifuzz Docker image (Python fuzz example runner)
 minifuzz-traces/              # Captured request-response pairs from typeberry
   populate.sh                 # Script to regenerate traces
