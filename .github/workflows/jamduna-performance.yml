@@ -1,0 +1,16 @@
+name: "Performance: jamduna"
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/jamduna-performance.yml'
+
+jobs:
+  test:
+    uses: ./.github/workflows/reusable-picofuzz.yml
+    with:
+      target_name: jamduna
+      docker_image: 'ghcr.io/jam-duna/duna-target:latest'

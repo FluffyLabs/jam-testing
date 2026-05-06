@@ -20,7 +20,7 @@ volumes. Containers run with `--network none` — no outbound network access.
 
 ## Adding a new team
 
-A new-team PR must include **all five** of the following:
+A new-team PR must include **all four** of the following:
 
 ### 1. Workflow file
 
@@ -64,24 +64,7 @@ Create `teams/<team>/.gitkeep` (an empty file so Git tracks the directory).
 This is **required** — the dashboard discovers teams by listing `teams/*/`
 and will silently skip any team without a folder.
 
-### 4. Dashboard deploy workflow trigger
-
-Add the workflow name to the `workflow_run.workflows` list in
-`.github/workflows/deploy-dashboard.yml`:
-
-```yaml
-on:
-  workflow_run:
-    workflows:
-      # ... existing entries ...
-      - "Performance: <team>"    # <-- add this
-```
-
-This is required because GitHub Actions needs a static list of workflow
-names for triggers. The `TARGETS` variable for artifact downloads is
-derived automatically from the `teams/` directory.
-
-### 5. Workflow naming convention
+### 4. Workflow naming convention
 
 The workflow `name:` field must follow the pattern `"Performance: <team>"`.
 The filename must be `<team>-performance.yml`.
@@ -126,7 +109,6 @@ special repository access.
 - [ ] Badge row added to `README.md`
 - [ ] `teams/<team>/.gitkeep` created (dashboard won't show the team without it)
 - [ ] Workflow name matches `"Performance: <team>"`
-- [ ] `deploy-dashboard.yml` updated: `workflow_run.workflows` trigger list
 - [ ] Docker image is publicly pullable
 - [ ] Source repo for the Docker image is public (for auditability)
 - [ ] No changes to shared infrastructure (reusable workflow, tests/, etc.)
@@ -163,7 +145,7 @@ preserved.
 |------|---------|
 | `.github/workflows/reusable-picofuzz.yml` | Core reusable workflow (minifuzz + picofuzz) |
 | `.github/workflows/graymatter-fuzz-source.yml` | Reusable workflow for graymatter fuzz source |
-| `.github/workflows/deploy-dashboard.yml` | Dashboard deploy (has hardcoded team list) |
+| `.github/workflows/deploy-dashboard.yml` | Dashboard deploy (discovers teams from `teams/*/`) |
 | `.github/workflows/<team>-performance.yml` | Per-team performance workflow |
 | `.github/workflows/<team>-fuzz.yml` | Per-team fuzz source workflow |
 | `tests/common.ts` | Docker container orchestration (resource limits, networking) |

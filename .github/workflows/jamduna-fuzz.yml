@@ -1,0 +1,21 @@
+name: "Fuzz: jamduna"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/jamduna-fuzz.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: jamduna
+      docker_image: 'ghcr.io/jam-duna/duna-target:latest'
+      mention: mkchungs

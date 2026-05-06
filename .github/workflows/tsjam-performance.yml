@@ -1,0 +1,16 @@
+name: "Performance: tsjam"
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/tsjam-performance.yml'
+
+jobs:
+  test:
+    uses: ./.github/workflows/reusable-picofuzz.yml
+    with:
+      target_name: tsjam
+      docker_image: 'ghcr.io/vekexasia/tsjam-target:0.7.2'
