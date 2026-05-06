@@ -91,16 +91,15 @@ export interface TargetConfig {
 export function getTargetConfig(): TargetConfig {
   const name = process.env.TARGET_NAME;
   const image = process.env.TARGET_IMAGE;
-  const cmd = process.env.TARGET_CMD;
 
-  if (!name || !image || !cmd) {
-    throw new Error("TARGET_NAME, TARGET_IMAGE, and TARGET_CMD environment variables are required");
+  if (!name || !image) {
+    throw new Error("TARGET_NAME and TARGET_IMAGE environment variables are required");
   }
 
   return {
     name,
     image,
-    cmd,
+    cmd: process.env.TARGET_CMD || "",
     env: process.env.TARGET_ENV || "",
     readinessPattern: process.env.TARGET_READINESS_PATTERN || "",
     memory: process.env.TARGET_MEMORY || "512m",
