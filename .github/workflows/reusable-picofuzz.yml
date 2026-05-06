@@ -12,9 +12,10 @@ on:
         type: string
         description: "Full Docker image reference"
       docker_cmd:
-        required: true
+        required: false
         type: string
-        description: "Base command with {TARGET_SOCK} placeholder"
+        default: ""
+        description: "Base command with {TARGET_SOCK} placeholder. Leave empty for targets that read JAM_FUZZ_SOCK_PATH from env."
       docker_env:
         required: false
         type: string
