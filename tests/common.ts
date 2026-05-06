@@ -16,7 +16,7 @@ const SHARED_VOLUME = "jam-ipc-volume";
  */
 const STANDARD_TARGET_ENV: Record<string, string> = {
   JAM_FUZZ: "1",
-  JAM_FUZZ_SPEC: "tiny",
+  JAM_FUZZ_SPEC: process.env.JAM_FUZZ_SPEC || "tiny",
   JAM_FUZZ_DATA_PATH: DATA_PATH,
   JAM_FUZZ_SOCK_PATH: SOCKET_PATH,
   JAM_FUZZ_LOG_LEVEL: "debug",
