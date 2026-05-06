@@ -1,0 +1,16 @@
+name: "Performance: jambda"
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/jambda-performance.yml'
+
+jobs:
+  test:
+    uses: ./.github/workflows/reusable-picofuzz.yml
+    with:
+      target_name: jambda
+      docker_image: 'ghcr.io/archelabs/jambda-fuzz-target:latest'
