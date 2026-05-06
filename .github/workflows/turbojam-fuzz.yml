@@ -14,20 +14,17 @@ permissions:
 
 jobs:
   graymatter-source:
+    strategy:
+      fail-fast: false
+      matrix:
+        spec: [tiny, full]
     uses: ./.github/workflows/graymatter-fuzz-source.yml
     with:
       target_name: turbojam
       docker_image: 'r2rationality/turbojam-fuzz:latest'
-      docker_cmd: 'fuzzer-api {TARGET_SOCK}'
+      docker_cmd: ${{ matrix.spec == 'full' && '' || 'fuzzer-api {TARGET_SOCK}' }}
+      spec: ${{ matrix.spec }}
       timeout_minutes: 1380
-      num_blocks: 350000
+      num_blocks: 175000
       num_runs: 10
-      mention: sierkov
-
-  demo:
-    uses: ./.github/workflows/demo-source.yml
-    with:
-      target_name: turbojam
-      docker_image: 'r2rationality/turbojam-fuzz:latest'
-      docker_cmd: 'fuzzer-api {TARGET_SOCK}'
       mention: sierkov
