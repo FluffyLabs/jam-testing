@@ -1,0 +1,23 @@
+name: "Demo (full): turbojam"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/turbojam-demo-full.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: turbojam
+      docker_image: 'r2rationality/turbojam-fuzz:latest'
+      spec: full
+      mention: sierkov

@@ -1,0 +1,24 @@
+name: "Demo (full): jamforge"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/jamforge-demo-full.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: jamforge
+      docker_image: 'ghcr.io/philoniare/jam-forge:latest'
+      docker_memory: '4096m'
+      spec: full
+      mention: philoniare

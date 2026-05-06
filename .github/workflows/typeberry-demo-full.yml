@@ -1,0 +1,25 @@
+name: "Demo (full): typeberry"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/typeberry-demo-full.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: typeberry
+      docker_image: 'ghcr.io/fluffylabs/typeberry:latest'
+      docker_env: 'JAM_LOG=log'
+      readiness_pattern: 'PVM Backend'
+      spec: full
+      mention: tomusdrw

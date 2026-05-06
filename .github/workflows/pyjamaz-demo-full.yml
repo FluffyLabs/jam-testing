@@ -1,0 +1,23 @@
+name: "Demo (full): pyjamaz"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/pyjamaz-demo-full.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: pyjamaz
+      docker_image: 'jamdottech/pyjamaz:latest'
+      spec: full
+      mention: emielsebastiaan
