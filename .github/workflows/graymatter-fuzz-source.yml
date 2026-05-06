@@ -50,6 +50,11 @@ on:
         type: number
         default: 1
         description: "Number of fuzzer runs (source is restarted, target keeps running)"
+      spec:
+        required: false
+        type: string
+        default: "tiny"
+        description: "JAM spec to test against (tiny or full)"
       mention:
         required: false
         type: string
@@ -57,12 +62,12 @@ on:
         description: "GitHub username to @-mention on failure (e.g. tomusdrw). If empty, no issue is created."
 
 concurrency:
-  group: "fuzz-graymatter-${{ inputs.target_name }}"
+  group: "fuzz-graymatter-${{ inputs.target_name }}-${{ inputs.spec }}"
   cancel-in-progress: true
 
 jobs:
   init:
-    name: "Init (graymatter → ${{ inputs.target_name }})"
+    name: "Init (graymatter → ${{ inputs.target_name }}, ${{ inputs.spec }})"
     runs-on: [self-hosted, "${{ inputs.target_name }}"]
     steps:
       - uses: actions/checkout@v6
@@ -86,7 +91,7 @@ jobs:
 
   fuzz:
     needs: init
-    name: "Fuzz (graymatter → ${{ inputs.target_name }})"
+    name: "Fuzz (graymatter → ${{ inputs.target_name }}, ${{ inputs.spec }})"
     runs-on: [self-hosted, "${{ inputs.target_name }}"]
     timeout-minutes: ${{ inputs.timeout_minutes }}
 
@@ -109,6 +114,7 @@ jobs:
         env:
           TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
           NUM_RUNS: ${{ inputs.num_runs }}
+          JAM_FUZZ_SPEC: ${{ inputs.spec }}
           TARGET_NAME: ${{ inputs.target_name }}
           TARGET_IMAGE: ${{ inputs.docker_image }}
           TARGET_CMD: ${{ inputs.docker_cmd }}
@@ -117,12 +123,12 @@ jobs:
           TARGET_MEMORY: ${{ inputs.docker_memory }}
           SOURCE_NAME: graymatter
           SOURCE_IMAGE: 'ghcr.io/jambrains/graymatter/gm:conformance-fuzzer-latest'
-          SOURCE_CMD: 'fuzz-m1-source --num-blocks ${{ inputs.num_blocks }} --target {TARGET_SOCK}'
+          SOURCE_CMD: 'fuzz-m1-source --spec=${{ inputs.spec }} --num-blocks ${{ inputs.num_blocks }} --target {TARGET_SOCK}'
 
   notify:
     needs: [init, fuzz]
     if: ${{ failure() && inputs.mention != '' }}
-    name: "Notify (${{ inputs.target_name }})"
+    name: "Notify (${{ inputs.target_name }}, ${{ inputs.spec }})"
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -135,6 +141,7 @@ jobs:
           count=$(gh issue list \
             --repo "${{ github.repository }}" \
             --label "fuzz-failure" \
+            --label "${{ inputs.spec }}" \
             --label "${{ inputs.target_name }}" \
             --state open \
             --json number \
@@ -148,12 +155,12 @@ jobs:
         run: |
           gh issue create \
             --repo "${{ github.repository }}" \
-            --title "Fuzz failure: graymatter → ${{ inputs.target_name }}" \
-            --label "fuzz-failure,${{ inputs.target_name }}" \
+            --title "Fuzz failure: graymatter → ${{ inputs.target_name }} (${{ inputs.spec }})" \
+            --label "fuzz-failure,${{ inputs.spec }},${{ inputs.target_name }}" \
             --body "$(cat <<EOF
           cc @${{ inputs.mention }}
 
-          The graymatter fuzz source test against **${{ inputs.target_name }}** failed.
+          The graymatter fuzz source test against **${{ inputs.target_name }}** with spec **${{ inputs.spec }}** failed.
 
           **Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
