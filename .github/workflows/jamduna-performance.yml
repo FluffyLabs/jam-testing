@@ -14,3 +14,4 @@ jobs:
     with:
       target_name: jamduna
       docker_image: 'ghcr.io/jam-duna/duna-target:latest'
+      docker_memory: '2048m'
