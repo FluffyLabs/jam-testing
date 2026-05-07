@@ -17,20 +17,188 @@ reviews:
         1. The `name:` field follows the exact pattern `"Performance: <team>"`.
         2. The filename matches `<team>-performance.yml`.
         3. It uses `uses: ./.github/workflows/reusable-picofuzz.yml`.
-        4. Required inputs are provided: `target_name`, `docker_image`, `docker_cmd`.
+        4. Required inputs are provided: `target_name`, `docker_image`. `docker_cmd`
+           is OPTIONAL — new targets that read `JAM_FUZZ_SOCK_PATH` from env can omit
+           it and rely on the image's default `CMD`. Do not request changes solely for
+           a missing `docker_cmd`.
         5. The `target_name` value matches the `<team>` in the filename and workflow name.
         6. It has both `schedule` (cron) and `workflow_dispatch` triggers.
         7. The Docker image reference looks like a public registry path (e.g. ghcr.io).
-        8. The `docker_cmd` contains the `{TARGET_SOCK}` placeholder.
+        8. If `docker_cmd` is provided, it should contain the `{TARGET_SOCK}` placeholder
+           (which is substituted with the socket path). If `docker_cmd` is absent, this
+           check does not apply.
         9. No extra jobs or steps are added beyond `uses: ./.github/workflows/reusable-picofuzz.yml`.
         10. A corresponding `teams/<team>/` directory with a `.gitkeep` file MUST exist
             in the same PR. Without it the dashboard will silently skip this team's data.
             If the directory is missing, request changes.
         11. The Docker image must be publicly accessible (no authentication required).
-            Check that the image reference points to a public ghcr.io or Docker Hub
-            repository. If the image is under a private org or user namespace, flag it
-            as a potential issue — the workflow will fail with "unauthorized" at runtime
-            if the image cannot be pulled without credentials.
+            Apply the "Docker image availability check" protocol below — DO NOT flag
+            based on namespace heuristics, and DO NOT flag without ≥2 independent
+            verification attempts that consistently report a definitive missing-image
+            response.
+
+        Docker image availability check protocol:
+
+        STRICT ANTI-FALSE-POSITIVE POLICY. Read this in full before flagging
+        any image as unavailable. False positives on this check are MUCH
+        worse than false negatives, because the workflow itself will fail
+        loudly at runtime if the image truly is unavailable — so the
+        downside of missing one is bounded and self-correcting, while
+        falsely blocking a legitimate PR wastes contributor time and
+        erodes trust in this review.
+
+        Default behavior: DO NOT FLAG. Only raise the concern when you have
+        STRONG, REPRODUCIBLE evidence the image cannot be pulled anonymously.
+
+        Verification protocol — perform ALL applicable steps before flagging:
+
+        (a) Do NOT rely on namespace heuristics. A "personal-looking" GitHub
+            user namespace (e.g. `ghcr.io/<username>/...`), an unfamiliar
+            registry, or a non-standard image name is NOT evidence of being
+            private. Many legitimate teams publish public images under
+            personal namespaces. Skin-deep cues are off-limits as the basis
+            for a comment.
+
+        (b) Perform AT LEAST TWO independent verification attempts before
+            drawing any conclusion. Examples of independent methods:
+            - `docker manifest inspect <image>` (anonymous).
+            - `curl -sI https://<registry>/v2/<repo>/manifests/<tag>` after
+              negotiating an anonymous bearer token from the registry's
+              `WWW-Authenticate` header (this is the standard OCI dance —
+              a 401 on the first request is EXPECTED and is NOT evidence
+              of private-ness; you must follow the auth challenge).
+            - `gh api` against ghcr.io for ghcr-hosted images.
+            - The registry's web UI (e.g. https://github.com/orgs/<org>/packages
+              or https://hub.docker.com/r/<repo>).
+            Two attempts using the SAME method don't count as independent —
+            use at least two genuinely different paths. If you can manage
+            three independent methods, even better.
+
+        (c) Classify failure modes correctly. ONLY a definitive 404 /
+            "manifest unknown" / "name unknown" / "repository does not
+            exist" — observed CONSISTENTLY across BOTH attempts — counts
+            as evidence the image is missing. Specifically:
+
+            - HTTP 401 / "unauthorized" alone is NOT evidence. Public
+              registries return 401 on the first request and expect the
+              client to negotiate an anonymous token. If you saw a 401,
+              you almost certainly skipped the auth dance — retry
+              correctly before drawing any conclusion.
+            - HTTP 5xx, timeouts, DNS errors, rate-limit (429) responses,
+              connection resets — TRANSIENT. Treat as "ok". Do NOT flag.
+            - Any inability to run the check at all (no network, no docker,
+              tool not available) — INCONCLUSIVE. Treat as "ok". Do NOT
+              flag.
+
+        (d) If — and ONLY if — after ≥2 independent attempts using genuinely
+            different methods you get a consistent definitive missing-image
+            response (404 / manifest unknown), raise it as a QUESTION, not
+            a request-changes:
+
+              "I tried to pull `<image>` using <method 1> and <method 2>
+               and both reported the manifest is unknown. Could you
+               double-check the image reference and confirm it's pushed
+               and publicly accessible?"
+
+            Frame it as a check-with-the-author, not as a blocker. The
+            author may know something you don't (e.g. the image is being
+            pushed in a follow-up commit).
+
+        Reminder: when in doubt, say nothing. The CI will catch a truly
+        broken reference within minutes of the first run.
+
+    # --- Per-team fuzz workflow ---
+    - path: ".github/workflows/*-fuzz.yml"
+      instructions: |
+        This is a per-team fuzz workflow. Verify:
+        1. The `name:` field follows the exact pattern `"Fuzz: <team>"`.
+        2. The filename matches `<team>-fuzz.yml`.
+        3. It uses one of `./.github/workflows/graymatter-fuzz-source.yml`,
+           `./.github/workflows/demo-source.yml`, or another reusable fuzz
+           source workflow in `.github/workflows/`.
+        4. Required inputs are provided: `target_name`, `docker_image`. `docker_cmd`
+           is OPTIONAL — new targets that read `JAM_FUZZ_SOCK_PATH` from env can omit
+           it and rely on the image's default `CMD`. Do not request changes solely for
+           a missing `docker_cmd`.
+        5. The `target_name` value matches the `<team>` in the filename and workflow name.
+        6. If `docker_cmd` is provided, it should contain the `{TARGET_SOCK}` placeholder.
+        7. `mention` should be set to a valid GitHub username — without it, no
+           failure issue is created. This is a soft recommendation, not a blocker.
+        8. The Docker image must be publicly accessible (no authentication required).
+           Apply the "Docker image availability check" protocol below — DO NOT flag
+           based on namespace heuristics, and DO NOT flag without ≥2 independent
+           verification attempts that consistently report a definitive missing-image
+           response.
+
+        Docker image availability check protocol:
+
+        STRICT ANTI-FALSE-POSITIVE POLICY. Read this in full before flagging
+        any image as unavailable. False positives on this check are MUCH
+        worse than false negatives, because the workflow itself will fail
+        loudly at runtime if the image truly is unavailable — so the
+        downside of missing one is bounded and self-correcting, while
+        falsely blocking a legitimate PR wastes contributor time and
+        erodes trust in this review.
+
+        Default behavior: DO NOT FLAG. Only raise the concern when you have
+        STRONG, REPRODUCIBLE evidence the image cannot be pulled anonymously.
+
+        Verification protocol — perform ALL applicable steps before flagging:
+
+        (a) Do NOT rely on namespace heuristics. A "personal-looking" GitHub
+            user namespace (e.g. `ghcr.io/<username>/...`), an unfamiliar
+            registry, or a non-standard image name is NOT evidence of being
+            private. Many legitimate teams publish public images under
+            personal namespaces. Skin-deep cues are off-limits as the basis
+            for a comment.
+
+        (b) Perform AT LEAST TWO independent verification attempts before
+            drawing any conclusion. Examples of independent methods:
+            - `docker manifest inspect <image>` (anonymous).
+            - `curl -sI https://<registry>/v2/<repo>/manifests/<tag>` after
+              negotiating an anonymous bearer token from the registry's
+              `WWW-Authenticate` header (this is the standard OCI dance —
+              a 401 on the first request is EXPECTED and is NOT evidence
+              of private-ness; you must follow the auth challenge).
+            - `gh api` against ghcr.io for ghcr-hosted images.
+            - The registry's web UI (e.g. https://github.com/orgs/<org>/packages
+              or https://hub.docker.com/r/<repo>).
+            Two attempts using the SAME method don't count as independent —
+            use at least two genuinely different paths. If you can manage
+            three independent methods, even better.
+
+        (c) Classify failure modes correctly. ONLY a definitive 404 /
+            "manifest unknown" / "name unknown" / "repository does not
+            exist" — observed CONSISTENTLY across BOTH attempts — counts
+            as evidence the image is missing. Specifically:
+
+            - HTTP 401 / "unauthorized" alone is NOT evidence. Public
+              registries return 401 on the first request and expect the
+              client to negotiate an anonymous token. If you saw a 401,
+              you almost certainly skipped the auth dance — retry
+              correctly before drawing any conclusion.
+            - HTTP 5xx, timeouts, DNS errors, rate-limit (429) responses,
+              connection resets — TRANSIENT. Treat as "ok". Do NOT flag.
+            - Any inability to run the check at all (no network, no docker,
+              tool not available) — INCONCLUSIVE. Treat as "ok". Do NOT
+              flag.
+
+        (d) If — and ONLY if — after ≥2 independent attempts using genuinely
+            different methods you get a consistent definitive missing-image
+            response (404 / manifest unknown), raise it as a QUESTION, not
+            a request-changes:
+
+              "I tried to pull `<image>` using <method 1> and <method 2>
+               and both reported the manifest is unknown. Could you
+               double-check the image reference and confirm it's pushed
+               and publicly accessible?"
+
+            Frame it as a check-with-the-author, not as a blocker. The
+            author may know something you don't (e.g. the image is being
+            pushed in a follow-up commit).
+
+        Reminder: when in doubt, say nothing. The CI will catch a truly
+        broken reference within minutes of the first run.
 
     # --- Dashboard deploy workflow ---
     - path: ".github/workflows/deploy-dashboard.yml"

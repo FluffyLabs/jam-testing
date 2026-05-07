@@ -7,7 +7,7 @@ describe("getTargetConfig", () => {
     delete process.env.TARGET_NAME;
     delete process.env.TARGET_IMAGE;
     delete process.env.TARGET_CMD;
-    assert.throws(() => getTargetConfig(), /TARGET_NAME, TARGET_IMAGE, and TARGET_CMD/);
+    assert.throws(() => getTargetConfig(), /TARGET_NAME and TARGET_IMAGE/);
   });
 
   it("parses env vars correctly", () => {
@@ -30,12 +30,13 @@ describe("getTargetConfig", () => {
   it("uses defaults for optional fields", () => {
     process.env.TARGET_NAME = "minimal";
     process.env.TARGET_IMAGE = "img:v1";
-    process.env.TARGET_CMD = "run {TARGET_SOCK}";
+    delete process.env.TARGET_CMD;
     delete process.env.TARGET_ENV;
     delete process.env.TARGET_MEMORY;
     delete process.env.TARGET_READINESS_PATTERN;
 
     const config = getTargetConfig();
+    assert.strictEqual(config.cmd, "");
     assert.strictEqual(config.env, "");
     assert.strictEqual(config.memory, "512m");
     assert.strictEqual(config.readinessPattern, "");

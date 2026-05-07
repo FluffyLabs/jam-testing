@@ -40,8 +40,8 @@ jobs:
     with:
       target_name: <team>
       docker_image: '<registry>/<image>:<tag>'
-      docker_cmd: '<command> {TARGET_SOCK}'
-      # Optional:
+      # Optional (only required inputs are target_name and docker_image):
+      # docker_cmd: '<command> {TARGET_SOCK}'   # only if your image needs args; new targets can rely on JAM_FUZZ_SOCK_PATH
       # docker_env: 'KEY=VALUE KEY2=VALUE2'
       # docker_memory: '512m'
       # docker_platform: 'linux/amd64'
@@ -69,39 +69,31 @@ and will silently skip any team without a folder.
 The workflow `name:` field must follow the pattern `"Performance: <team>"`.
 The filename must be `<team>-performance.yml`.
 
-## Adding a fuzz source workflow
+## Adding fuzz source workflows
 
-To run an external fuzzer source (e.g. graymatter) against a team's target,
-create `.github/workflows/<team>-fuzz.yml`:
+Every team has two demo fuzz workflows — one per JAM spec — so each spec
+gets its own GitHub Actions badge:
 
-```yaml
-name: "Fuzz: <team>"
+- `.github/workflows/<team>-demo-tiny.yml` — `spec: tiny`
+- `.github/workflows/<team>-demo-full.yml` — `spec: full`, **must omit
+  `docker_cmd`** (full-spec runs are env-only — your target reads
+  `JAM_FUZZ_SOCK_PATH`)
 
-on:
-  workflow_dispatch:
+Both call the reusable `demo-source.yml`. Copy the structure from any
+existing pair (e.g. `typeberry-demo-tiny.yml` / `typeberry-demo-full.yml`).
 
-jobs:
-  graymatter-source:
-    uses: ./.github/workflows/graymatter-fuzz-source.yml
-    with:
-      target_name: <team>
-      docker_image: '<registry>/<image>:<tag>'
-      docker_cmd: '<command> {TARGET_SOCK}'
-      # Optional:
-      # docker_env: 'KEY=VALUE KEY2=VALUE2'
-      # docker_memory: '512m'
-      # docker_platform: 'linux/amd64'
-      # readiness_pattern: 'Ready'
-      mention: <github-username>
-```
+Long-running fuzz (dedicated runner) is optional. When provided, it lives
+in a single `<team>-fuzz.yml` that runs `graymatter-fuzz-source.yml` as a
+matrix over `spec: [tiny, full]` (one badge — red if either spec fails).
+Halve `num_blocks` so the two matrix entries serializing on the same
+self-hosted runner fit your time budget. Only `typeberry` and `turbojam`
+have these today; copy from one of those.
 
-Copy the structure from `typeberry-fuzz.yml`.
-
-The `mention` input controls who gets @-mentioned in the issue body when
+The `mention` input on each workflow controls who gets @-mentioned when
 the fuzz job fails. On failure the workflow creates a GitHub issue
-(deduplicated — it won't create a second issue while one is still open).
-The mentioned user receives a GitHub notification without needing any
-special repository access.
+(deduplicated per `(target, spec)` — it won't create a second issue while
+one is still open). The mentioned user receives a GitHub notification
+without needing any special repository access.
 
 ## Checklist for reviewing new-team PRs
 
@@ -115,12 +107,25 @@ special repository access.
 
 ## Checklist for reviewing fuzz workflow PRs
 
-- [ ] Workflow file references `graymatter-fuzz-source.yml` (or another reusable fuzz source)
-- [ ] Workflow name matches `"Fuzz: <team>"`
-- [ ] Filename is `<team>-fuzz.yml`
+For demo workflows (the common case):
+
+- [ ] Two files added: `<team>-demo-tiny.yml` and `<team>-demo-full.yml`
+- [ ] Workflow names match `"Demo (tiny): <team>"` / `"Demo (full): <team>"`
+- [ ] Both reference `demo-source.yml`; `spec` set to `tiny` and `full`
+      respectively
+- [ ] `<team>-demo-full.yml` does **not** pass `docker_cmd`
 - [ ] `mention` is set to a valid GitHub username
 - [ ] Docker image is publicly pullable
 - [ ] No changes to shared infrastructure (reusable workflow, tests/, etc.)
+
+For long-running workflows (optional, dedicated runner):
+
+- [ ] File is `<team>-fuzz.yml`; references `graymatter-fuzz-source.yml`
+- [ ] Workflow name matches `"Fuzz: <team>"`
+- [ ] `strategy.matrix.spec` is `[tiny, full]`
+- [ ] Per-spec `num_blocks` sized so two serialized matrix entries fit the
+      runner's wall-time window
+- [ ] `mention` is set to a valid GitHub username
 
 ## Security constraints
 
@@ -170,6 +175,8 @@ npm run build -w @fluffylabs/minifuzz
 docker pull --platform=linux/amd64 <target-image>
 mkdir -p ./picofuzz-result
 
+# TARGET_CMD is optional — omit if the image's CMD reads JAM_FUZZ_SOCK_PATH.
+# TARGET_READINESS_PATTERN is optional — default is socket-probe.
 TARGET_NAME=<team> \
 TARGET_IMAGE='<image>' \
 TARGET_CMD='<cmd> {TARGET_SOCK}' \
