@@ -30,7 +30,7 @@ blocks each on a shared runner) executing the JAM `tiny` and `full` specs
 respectively. **Long-run** is a dedicated, multi-hour fuzz run that
 exercises both specs in a matrix (single badge — red if either spec
 fails). Targets pick which spec to run from the `JAM_FUZZ_SPEC` environment
-variable; the matching `--spec=<value>` is also passed to the graymatter
+variable; the matching `--spec <value>` is also passed to the graymatter
 source command by the workflow.
 
 | Team | Performance | Demo (tiny) | Demo (full) | Long-run |
@@ -204,7 +204,7 @@ connections on the Unix socket. Two modes are supported:
    ```
 
    Your target image must support both `tiny` and `full` (selected via
-   `JAM_FUZZ_SPEC`). The `--spec=<value>` argument is passed to the
+   `JAM_FUZZ_SPEC`). The `--spec <value>` argument is passed to the
    graymatter source by the workflow; your target receives no spec-related
    CLI args.
 
@@ -227,7 +227,7 @@ connections on the Unix socket. Two modes are supported:
 | `readiness_pattern` | no | `""` | Regex matched against stdout to detect readiness |
 | `timeout_minutes` | no | `10` | Per-suite timeout |
 | `test_suites` | no | all four | JSON array of picofuzz suite names to run |
-| `spec` | no | `"tiny"` | (Demo / long-run only) JAM spec to test against (`tiny` or `full`). The reusable workflow sets `JAM_FUZZ_SPEC` env on the target and appends `--spec=<value>` to the graymatter source. |
+| `spec` | no | `"tiny"` | (Demo / long-run only) JAM spec to test against (`tiny` or `full`). The reusable workflow sets `JAM_FUZZ_SPEC` env on the target and appends `--spec <value>` to the graymatter source. |
 
 ## Running locally
 
