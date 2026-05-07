@@ -22,4 +22,5 @@ jobs:
       docker_env: 'CONFIG_FILE=app/config/node-dev.conf'
       docker_memory: '4096m'
       spec: full
+      num_blocks: 500
       mention: celadari

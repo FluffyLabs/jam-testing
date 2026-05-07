@@ -20,4 +20,5 @@ jobs:
       target_name: jamzig
       docker_image: 'docker.io/jamzig/jam-conformance-target:latest'
       spec: full
+      num_blocks: 500
       mention: boymaas

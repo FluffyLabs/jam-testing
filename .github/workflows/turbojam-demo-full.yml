@@ -20,4 +20,5 @@ jobs:
       target_name: turbojam
       docker_image: 'r2rationality/turbojam-fuzz:latest'
       spec: full
+      num_blocks: 500
       mention: sierkov

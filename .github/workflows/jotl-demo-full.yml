@@ -22,4 +22,5 @@ jobs:
       docker_memory: '2048m'
       readiness_pattern: 'Listening on'
       spec: full
+      num_blocks: 500
       mention: polykrate

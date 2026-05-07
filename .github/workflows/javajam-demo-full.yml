@@ -21,4 +21,5 @@ jobs:
       docker_image: 'ghcr.io/methodfive/javajam:latest-amd64'
       docker_memory: '8192m'
       spec: full
+      num_blocks: 500
       mention: jaymansfield

@@ -20,4 +20,5 @@ jobs:
       target_name: pyjamaz
       docker_image: 'jamdottech/pyjamaz:latest'
       spec: full
+      num_blocks: 500
       mention: emielsebastiaan

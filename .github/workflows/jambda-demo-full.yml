@@ -20,4 +20,5 @@ jobs:
       target_name: jambda
       docker_image: 'ghcr.io/archelabs/jambda-fuzz-target:latest'
       spec: full
+      num_blocks: 500
       mention: libingjiang47

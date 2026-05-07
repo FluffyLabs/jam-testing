@@ -20,4 +20,5 @@ jobs:
       target_name: jampy-recompiler
       docker_image: 'ghcr.io/dakk/jampy-target:0.7.2'
       spec: full
+      num_blocks: 500
       mention: dakk

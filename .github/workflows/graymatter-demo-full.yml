@@ -20,4 +20,5 @@ jobs:
       target_name: graymatter
       docker_image: 'ghcr.io/jambrains/graymatter/gm:conformance-fuzzer-latest'
       spec: full
+      num_blocks: 500
       mention: franciscoaguirre

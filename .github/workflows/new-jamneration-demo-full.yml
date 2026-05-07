@@ -21,4 +21,5 @@ jobs:
       docker_image: 'ghcr.io/new-jamneration/new-jamneration-target:latest'
       docker_env: 'USE_MINI_REDIS=true'
       spec: full
+      num_blocks: 500
       mention: YCC3741

@@ -20,4 +20,5 @@ jobs:
       target_name: tessera
       docker_image: 'ghcr.io/chainscore/tessera:latest'
       spec: full
+      num_blocks: 500
       mention: prasad-kumkar
