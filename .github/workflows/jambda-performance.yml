@@ -14,3 +14,4 @@ jobs:
     with:
       target_name: jambda
       docker_image: 'ghcr.io/archelabs/jambda-fuzz-target:latest'
+      docker_memory: '2048m'
