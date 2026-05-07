@@ -22,7 +22,7 @@ jobs:
     with:
       target_name: turbojam
       docker_image: 'r2rationality/turbojam-fuzz:latest'
-      docker_cmd: ${{ matrix.spec == 'full' && '' || 'fuzzer-api {TARGET_SOCK}' }}
+      docker_cmd: ${{ fromJson('{"tiny":"fuzzer-api {TARGET_SOCK}","full":""}')[matrix.spec] }}
       spec: ${{ matrix.spec }}
       timeout_minutes: 1380
       num_blocks: 175000
