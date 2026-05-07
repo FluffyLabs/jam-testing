@@ -40,8 +40,8 @@ jobs:
     with:
       target_name: <team>
       docker_image: '<registry>/<image>:<tag>'
-      docker_cmd: '<command> {TARGET_SOCK}'
-      # Optional:
+      # Optional (only required inputs are target_name and docker_image):
+      # docker_cmd: '<command> {TARGET_SOCK}'   # only if your image needs args; new targets can rely on JAM_FUZZ_SOCK_PATH
       # docker_env: 'KEY=VALUE KEY2=VALUE2'
       # docker_memory: '512m'
       # docker_platform: 'linux/amd64'
@@ -86,13 +86,14 @@ jobs:
     with:
       target_name: <team>
       docker_image: '<registry>/<image>:<tag>'
-      docker_cmd: '<command> {TARGET_SOCK}'
-      # Optional:
+      mention: <github-username>
+      # Optional (only required inputs are target_name and docker_image; mention is technically
+      # optional but recommended — without it no failure issue is created):
+      # docker_cmd: '<command> {TARGET_SOCK}'   # only if your image needs args; new targets can rely on JAM_FUZZ_SOCK_PATH
       # docker_env: 'KEY=VALUE KEY2=VALUE2'
       # docker_memory: '512m'
       # docker_platform: 'linux/amd64'
       # readiness_pattern: 'Ready'
-      mention: <github-username>
 ```
 
 Copy the structure from `typeberry-fuzz.yml`.
@@ -170,6 +171,8 @@ npm run build -w @fluffylabs/minifuzz
 docker pull --platform=linux/amd64 <target-image>
 mkdir -p ./picofuzz-result
 
+# TARGET_CMD is optional — omit if the image's CMD reads JAM_FUZZ_SOCK_PATH.
+# TARGET_READINESS_PATTERN is optional — default is socket-probe.
 TARGET_NAME=<team> \
 TARGET_IMAGE='<image>' \
 TARGET_CMD='<cmd> {TARGET_SOCK}' \

@@ -97,11 +97,12 @@ connections on the Unix socket. Two modes are supported:
    env vars on every target container: `JAM_FUZZ=1`, `JAM_FUZZ_SPEC=tiny`,
    `JAM_FUZZ_DATA_PATH=/shared/data`, `JAM_FUZZ_SOCK_PATH=/shared/jam_target.sock`,
    `JAM_FUZZ_LOG_LEVEL=debug`.
-   New targets should read the socket path from `JAM_FUZZ_SOCK_PATH`. For
-   backwards compatibility, the legacy `{TARGET_SOCK}` placeholder in
-   `docker_cmd` is still substituted with the same socket path, so existing
-   targets keep working unchanged. Anything in `docker_env` is appended after
-   the standard vars and can override them.
+   New targets should read the socket path from `JAM_FUZZ_SOCK_PATH` and can
+   be launched with their image's default `CMD` — leave `docker_cmd` unset in
+   that case. For backwards compatibility, when `docker_cmd` is provided the
+   legacy `{TARGET_SOCK}` placeholder is substituted with the same socket
+   path, so existing targets keep working unchanged. Anything in `docker_env`
+   is appended after the standard vars and can override them.
    `JAM_FUZZ_DATA_PATH` is wiped between sequential fuzz-source runs to match
    official testing's fresh-init behavior.
 
@@ -121,8 +122,8 @@ connections on the Unix socket. Two modes are supported:
        with:
          target_name: myteam
          docker_image: 'ghcr.io/myorg/myimage:latest'
-         docker_cmd: 'fuzz --socket {TARGET_SOCK}'
          # Optional overrides:
+         # docker_cmd: 'fuzz --socket {TARGET_SOCK}'   # only if your image needs args; new targets read JAM_FUZZ_SOCK_PATH
          # docker_env: 'MY_VAR=value'
          # docker_memory: '512m'
          # docker_platform: 'linux/amd64'
@@ -141,13 +142,14 @@ connections on the Unix socket. Two modes are supported:
 |---|---|---|---|
 | `target_name` | yes | — | Your implementation name |
 | `docker_image` | yes | — | Full image reference |
-| `docker_cmd` | yes | — | Command with `{TARGET_SOCK}` placeholder for the socket path |
+| `docker_cmd` | no | `""` | Override container command. `{TARGET_SOCK}` is substituted with the socket path. Leave empty for targets that read `JAM_FUZZ_SOCK_PATH` from env. |
 | `docker_env` | no | `""` | Space-separated `KEY=VALUE` pairs passed as `-e` flags |
 | `docker_memory` | no | `"512m"` | Container memory limit |
 | `docker_platform` | no | `"linux/amd64"` | Platform for `docker pull` |
 | `readiness_pattern` | no | `""` | Regex matched against stdout to detect readiness |
 | `timeout_minutes` | no | `10` | Per-suite timeout |
 | `test_suites` | no | all four | JSON array of picofuzz suite names to run |
+| `minifuzz_suites` | no | all six | JSON array of minifuzz suite names to run |
 
 ## Running locally
 
@@ -174,14 +176,14 @@ npx tsx --test tests/picofuzz/fallback.test.ts
 
 ### Environment variables
 
-| Variable | Description |
-|---|---|
-| `TARGET_NAME` | Implementation name |
-| `TARGET_IMAGE` | Docker image to test |
-| `TARGET_CMD` | Container command (`{TARGET_SOCK}` is replaced with the socket path) |
-| `TARGET_ENV` | Space-separated `KEY=VALUE` pairs |
-| `TARGET_MEMORY` | Container memory limit (default `512m`) |
-| `TARGET_READINESS_PATTERN` | Regex for log-based readiness |
+| Variable | Required | Description |
+|---|---|---|
+| `TARGET_NAME` | yes | Implementation name |
+| `TARGET_IMAGE` | yes | Docker image to test |
+| `TARGET_CMD` | no | Container command override (`{TARGET_SOCK}` is replaced with the socket path). Empty/unset uses the image's default `CMD`. |
+| `TARGET_ENV` | no | Space-separated `KEY=VALUE` pairs |
+| `TARGET_MEMORY` | no | Container memory limit (default `512m`) |
+| `TARGET_READINESS_PATTERN` | no | Regex for log-based readiness; default is socket-probe |
 
 ## Regenerating minifuzz traces
 
