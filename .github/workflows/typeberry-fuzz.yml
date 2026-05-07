@@ -20,7 +20,7 @@ jobs:
     with:
       target_name: typeberry
       docker_image: 'ghcr.io/fluffylabs/typeberry:latest'
-      docker_cmd: ${{ fromJson('{"tiny":"--version=1 fuzz-target {TARGET_SOCK}","full":""}')[matrix.spec] }}
+      docker_cmd: ''
       docker_env: 'JAM_LOG=log'
       readiness_pattern: 'PVM Backend'
       spec: ${{ matrix.spec }}
