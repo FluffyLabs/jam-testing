@@ -24,7 +24,7 @@ on:
       docker_memory:
         required: false
         type: string
-        default: "512m"
+        default: "1024m"
         description: "Docker memory limit"
       docker_platform:
         required: false
@@ -87,7 +87,7 @@ jobs:
     needs: init
     name: "Minifuzz ${{ matrix.test }} (${{ inputs.target_name }})"
     runs-on: [self-hosted, perf]
-    timeout-minutes: ${{ inputs.timeout_minutes }}
+    timeout-minutes: ${{ (matrix.test == 'storage' || matrix.test == 'storage_light') && 15 || inputs.timeout_minutes }}
     strategy:
       fail-fast: true
       matrix:
@@ -110,7 +110,7 @@ jobs:
       - name: Run minifuzz ${{ matrix.test }}
         run: npm exec tsx -- --test tests/minifuzz/${{ matrix.test }}.test.ts
         env:
-          TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
+          TIMEOUT_MINUTES: ${{ (matrix.test == 'storage' || matrix.test == 'storage_light') && 15 || inputs.timeout_minutes }}
           TARGET_NAME: ${{ inputs.target_name }}
           TARGET_IMAGE: ${{ inputs.docker_image }}
           TARGET_CMD: ${{ inputs.docker_cmd }}
@@ -122,7 +122,7 @@ jobs:
     needs: [init, minifuzz]
     name: "Picofuzz ${{ matrix.test }} (${{ inputs.target_name }})"
     runs-on: [self-hosted, perf]
-    timeout-minutes: ${{ inputs.timeout_minutes }}
+    timeout-minutes: ${{ (matrix.test == 'storage' || matrix.test == 'storage_light') && 15 || inputs.timeout_minutes }}
     strategy:
       fail-fast: false
       matrix:
@@ -148,7 +148,7 @@ jobs:
       - name: Run picofuzz ${{ matrix.test }}
         run: npm exec tsx -- --test tests/picofuzz/${{ matrix.test }}.test.ts
         env:
-          TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
+          TIMEOUT_MINUTES: ${{ (matrix.test == 'storage' || matrix.test == 'storage_light') && 15 || inputs.timeout_minutes }}
           TARGET_NAME: ${{ inputs.target_name }}
           TARGET_IMAGE: ${{ inputs.docker_image }}
           TARGET_CMD: ${{ inputs.docker_cmd }}
