@@ -13,25 +13,28 @@ and the suite runs three stages against it:
 - **[Picofuzz](./picofuzz/)** — runs the same four STF suites (`fallback`,
   `safrole`, `storage`, `storage_light`) but does not check responses. Its
   only purpose is to measure block import performance (timings are displayed
-  on the [dashboard](#dashboard)).
+  on the [dashboard](https://fluffylabs.github.io/jam-testing/)).
 - **Fuzz testing** — one implementation (the "source") generates random
   blocks and another (the "target") must process them without crashing.
   Currently [graymatter](https://github.com/jambrains/graymatter) is
   available as a fuzz source, run against both the JAM `tiny` and `full`
-  specs. Every team gets two demo fuzz jobs (5 000 blocks each on a shared
-  runner — one per spec); dedicated long-running runs cover both specs in
-  a single matrix.
+  specs. Every team gets two demo fuzz jobs on a shared runner — one per
+  spec — sized so each fits the runner's budget (5 000 blocks for `tiny`,
+  500 for `full`); dedicated long-running runs cover both specs in a
+  single matrix.
 
 ## Status
 
 The **Performance** column covers minifuzz (conformance gate) + picofuzz
-(timing). **Demo (tiny)** and **Demo (full)** are short fuzz runs (5 000
-blocks each on a shared runner) executing the JAM `tiny` and `full` specs
-respectively. **Long-run** is a dedicated, multi-hour fuzz run that
-exercises both specs in a matrix (single badge — red if either spec
-fails). Targets pick which spec to run from the `JAM_FUZZ_SPEC` environment
-variable; the matching `--spec <value>` is also passed to the graymatter
-source command by the workflow.
+(timing). **Demo (tiny)** and **Demo (full)** are short fuzz runs on a
+shared runner executing the JAM `tiny` and `full` specs respectively
+(5 000 blocks for `tiny`, 500 for `full` — full-spec blocks are heavier,
+so the count is scaled down to fit a comparable wall-time budget).
+**Long-run** is a dedicated, multi-hour fuzz run that exercises both specs
+in a matrix (single badge — red if either spec fails). Targets pick which
+spec to run from the `JAM_FUZZ_SPEC` environment variable; the matching
+`--spec <value>` is also passed to the graymatter source command by the
+workflow.
 
 | Team | Performance | Demo (tiny) | Demo (full) | Long-run |
 |------|-------------|-------------|-------------|----------|
@@ -99,25 +102,40 @@ connections on the Unix socket. Two modes are supported:
 
 ## Adding your team
 
-1. **Provide a Docker image** that accepts a Unix socket path and speaks the
-   [JAM Fuzz protocol](https://github.com/davxy/jam-conformance/tree/main/fuzz-proto).
+1. **Provide a Docker image** that speaks the
+   [JAM Fuzz protocol](https://github.com/davxy/jam-conformance/tree/main/fuzz-proto)
+   and follows the
+   [standard target packaging](https://github.com/davxy/jam-conformance/tree/main/fuzz-proto#standard-target-packaging).
    The image must be publicly pullable (or accessible to the runner).
 
-   The harness sets the
-   [standard target packaging](https://github.com/davxy/jam-conformance/tree/main/fuzz-proto#standard-target-packaging)
-   env vars on every target container: `JAM_FUZZ=1`, `JAM_FUZZ_SPEC=<tiny|full>`,
-   `JAM_FUZZ_DATA_PATH=/shared/data`, `JAM_FUZZ_SOCK_PATH=/shared/jam_target.sock`,
-   `JAM_FUZZ_LOG_LEVEL=debug`. `JAM_FUZZ_SPEC` is set per-workflow; your image
-   must support both `tiny` and `full` and pick the right one from the env var.
-   New targets should read the socket path from `JAM_FUZZ_SOCK_PATH` and can
-   be launched with their image's default `CMD` — leave `docker_cmd` unset in
-   that case. For backwards compatibility, when `docker_cmd` is provided the
-   legacy `{TARGET_SOCK}` placeholder is substituted with the same socket
-   path, so existing targets keep working unchanged. **Full-spec workflows
-   must omit `docker_cmd`** — full-spec runs are env-only. Anything in `docker_env`
-   is appended after the standard vars and can override them.
-   `JAM_FUZZ_DATA_PATH` is wiped between sequential fuzz-source runs to match
-   official testing's fresh-init behavior.
+   The harness sets the standard env vars on every target container, and
+   your image must read its configuration from them rather than from CLI
+   args:
+
+   | Env var | Value |
+   |---|---|
+   | `JAM_FUZZ` | `1` |
+   | `JAM_FUZZ_SPEC` | `tiny` or `full` (per-workflow) |
+   | `JAM_FUZZ_DATA_PATH` | `/shared/data` |
+   | `JAM_FUZZ_SOCK_PATH` | `/shared/jam_target.sock` |
+   | `JAM_FUZZ_LOG_LEVEL` | `debug` |
+
+   Concretely:
+
+   - Your image must support **both** `tiny` and `full` and pick the right
+     one from `JAM_FUZZ_SPEC`.
+   - Your image must read the socket path from `JAM_FUZZ_SOCK_PATH` and be
+     launchable with its own default `CMD` — **do not set `docker_cmd`**
+     in any of the workflow files below. New teams should leave it unset.
+   - Anything you put in `docker_env` is appended after the standard vars
+     and can override them; use it for impl-specific tuning only.
+   - `JAM_FUZZ_DATA_PATH` is wiped between sequential fuzz-source runs to
+     match official testing's fresh-init behavior.
+
+   `docker_cmd` exists only as a backwards-compatibility shim for a few
+   already-onboarded targets that predate standard packaging — when set,
+   the legacy `{TARGET_SOCK}` placeholder is substituted with
+   `JAM_FUZZ_SOCK_PATH`. Full-spec workflows must omit it unconditionally.
 
 2. **Create the performance workflow** at `.github/workflows/<team>-performance.yml`:
 
@@ -135,8 +153,7 @@ connections on the Unix socket. Two modes are supported:
        with:
          target_name: myteam
          docker_image: 'ghcr.io/myorg/myimage:latest'
-         # Optional overrides:
-         # docker_cmd: 'fuzz --socket {TARGET_SOCK}'   # only if your image needs args; new targets read JAM_FUZZ_SOCK_PATH
+         # Optional overrides (do NOT set docker_cmd — see step 1):
          # docker_env: 'MY_VAR=value'
          # docker_memory: '512m'
          # docker_platform: 'linux/amd64'
@@ -144,8 +161,8 @@ connections on the Unix socket. Two modes are supported:
    ```
 
 3. **Create the two demo fuzz workflows.** One for `tiny`, one for `full`.
-   Tiny may pass `docker_cmd` (legacy `{TARGET_SOCK}` substitution allowed);
-   full **must not** pass `docker_cmd` (env-only invocation):
+   Both rely on standard target packaging (env-only invocation); neither
+   should set `docker_cmd`:
 
    ```yaml
    # .github/workflows/myteam-demo-tiny.yml
@@ -170,15 +187,13 @@ connections on the Unix socket. Two modes are supported:
        with:
          target_name: myteam
          docker_image: 'ghcr.io/myorg/myimage:latest'
-         docker_cmd: 'fuzz --socket {TARGET_SOCK}'   # tiny: legacy placeholder OK
          spec: tiny
          mention: yourgithub
    ```
 
    ```yaml
    # .github/workflows/myteam-demo-full.yml
-   # Identical to demo-tiny except: spec: full and no docker_cmd.
-   # Full-spec runs are env-only — your target must read JAM_FUZZ_SOCK_PATH.
+   # Identical to demo-tiny except: spec: full and num_blocks scaled down.
    name: "Demo (full): myteam"
 
    on:
@@ -201,6 +216,7 @@ connections on the Unix socket. Two modes are supported:
          target_name: myteam
          docker_image: 'ghcr.io/myorg/myimage:latest'
          spec: full
+         num_blocks: 500   # full-spec blocks are heavier; tiny uses the 5000 default
          mention: yourgithub
    ```
 
@@ -221,7 +237,7 @@ connections on the Unix socket. Two modes are supported:
 |---|---|---|---|
 | `target_name` | yes | — | Your implementation name |
 | `docker_image` | yes | — | Full image reference |
-| `docker_cmd` | no | `""` | Override container command. `{TARGET_SOCK}` is substituted with the socket path. Leave empty for targets that read `JAM_FUZZ_SOCK_PATH` from env. |
+| `docker_cmd` | no | `""` | **Legacy compat shim — new teams should leave this unset.** Override container command for pre-standard-packaging targets; `{TARGET_SOCK}` is substituted with `JAM_FUZZ_SOCK_PATH`. Must be empty in any full-spec workflow. |
 | `docker_env` | no | `""` | Space-separated `KEY=VALUE` pairs passed as `-e` flags |
 | `docker_memory` | no | `"512m"` | Container memory limit |
 | `docker_platform` | no | `"linux/amd64"` | Platform for `docker pull` |
@@ -284,6 +300,8 @@ up-to-date.
 
 ```
 .github/workflows/
+  ci.yml                        # Unit tests for the suite itself
+  deploy-dashboard.yml          # Builds and deploys the dashboard to GitHub Pages
   reusable-picofuzz.yml         # Core reusable workflow (minifuzz + picofuzz)
   demo-source.yml               # Reusable demo fuzz source workflow (tiny|full)
   graymatter-fuzz-source.yml    # Reusable long-running fuzz source workflow
@@ -292,14 +310,17 @@ up-to-date.
   <team>-demo-full.yml          # Per-team demo fuzz against the full spec
   <team>-fuzz.yml               # Per-team long-running fuzz (matrix over [tiny, full])
                                 #   — only for teams with dedicated runners
+agents.md                     # Contributor / AI-agent guide for this repo
 minifuzz/                     # Minifuzz Docker image (Python fuzz example runner)
 minifuzz-traces/              # Captured request-response pairs from typeberry
   populate.sh                 # Script to regenerate traces
   {suite}/                    # Per-suite trace files (fallback, safrole, etc.)
 picofuzz/                     # Picofuzz tool (fuzz protocol client + capture mode)
+scripts/                      # Helpers used by deploy-dashboard.yml (CSV → JSON, history)
 tests/
   common.ts                   # Target startup & shared helpers
   external-process.ts         # Docker process management
+  config.test.ts              # Unit tests over the workflow config files
   minifuzz/
     common.ts                 # Minifuzz test harness
     *.test.ts                 # Minifuzz suites (forks, no_forks, fallback, safrole, ...)
@@ -310,6 +331,7 @@ tests/
     common.ts                 # Fuzz source test harness
     fuzz.test.ts              # Fuzz source test entry point
 teams/<team>/                 # Team-specific scripts & data
+dashboard/                    # Git submodule: jam-conformance-dashboard (Next.js app)
 picofuzz-stf-data/            # Git submodule: STF test traces
 picofuzz-conformance-data/    # Git submodule: jam-conformance (minifuzz examples)
 ```
