@@ -20,6 +20,7 @@ jobs:
       target_name: new-jamneration
       docker_image: 'ghcr.io/new-jamneration/new-jamneration-target:latest'
       docker_env: 'USE_MINI_REDIS=true'
+      docker_memory: '8192m'
       spec: full
       num_blocks: 500
       mention: YCC3741

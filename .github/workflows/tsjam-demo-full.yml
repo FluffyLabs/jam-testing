@@ -19,6 +19,7 @@ jobs:
     with:
       target_name: tsjam
       docker_image: 'ghcr.io/vekexasia/tsjam-target:0.7.2'
+      docker_memory: '8192m'
       spec: full
       num_blocks: 500
       mention: vekexasia

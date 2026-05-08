@@ -19,7 +19,7 @@ jobs:
     with:
       target_name: pbnjam
       docker_image: 'shimonchick/pbnjam-fuzzer-target:latest'
-      docker_memory: '4096m'
+      docker_memory: '8192m'
       spec: full
       num_blocks: 500
       mention: mikirov

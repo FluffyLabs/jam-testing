@@ -19,7 +19,7 @@ jobs:
     with:
       target_name: jotl
       docker_image: 'ghcr.io/polykrate/jotl:latest'
-      docker_memory: '2048m'
+      docker_memory: '8192m'
       readiness_pattern: 'Listening on'
       spec: full
       num_blocks: 500

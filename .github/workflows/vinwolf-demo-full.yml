@@ -19,6 +19,7 @@ jobs:
     with:
       target_name: vinwolf
       docker_image: 'ghcr.io/bloppan/vinwolf:latest'
+      docker_memory: '8192m'
       readiness_pattern: 'listening on'
       spec: full
       num_blocks: 500

@@ -19,6 +19,7 @@ jobs:
     with:
       target_name: jamixir
       docker_image: 'ghcr.io/jamixir/jamixir:0.7.2'
+      docker_memory: '8192m'
       spec: full
       num_blocks: 500
       mention: danicuki

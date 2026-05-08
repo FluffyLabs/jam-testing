@@ -19,6 +19,7 @@ jobs:
     with:
       target_name: jamzig
       docker_image: 'docker.io/jamzig/jam-conformance-target:latest'
+      docker_memory: '8192m'
       spec: full
       num_blocks: 500
       mention: boymaas

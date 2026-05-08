@@ -20,6 +20,7 @@ jobs:
       target_name: jamzilla
       docker_image: 'ghcr.io/ascrivener/jamzilla:edge'
       docker_env: 'PVM_MODE=jit'
+      docker_memory: '8192m'
       spec: full
       num_blocks: 500
       mention: ascrivener
