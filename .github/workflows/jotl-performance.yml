@@ -14,6 +14,5 @@ jobs:
     with:
       target_name: jotl
       docker_image: 'ghcr.io/polykrate/jotl:latest'
-      docker_cmd: '{TARGET_SOCK}'
       docker_memory: '2048m'
       readiness_pattern: 'Listening on'
