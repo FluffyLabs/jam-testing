@@ -45,9 +45,20 @@ jobs:
             for bench in $BENCHMARKS; do
               ARTIFACT="picofuzz-csv-${target}-${bench}"
               echo "Downloading ${ARTIFACT}..."
-              gh run download --repo "${{ github.repository }}" \
-                --name "$ARTIFACT" \
-                --dir "artifacts/${ARTIFACT}" 2>/dev/null || echo "  (not found, skipping)"
+              SUCCESS=false
+              for attempt in 1 2 3; do
+                if gh run download --repo "${{ github.repository }}" \
+                  --name "$ARTIFACT" \
+                  --dir "artifacts/${ARTIFACT}" 2>/dev/null; then
+                  SUCCESS=true
+                  break
+                fi
+                echo "  attempt $attempt failed, retrying in ${attempt}s..."
+                sleep "$attempt"
+              done
+              if [ "$SUCCESS" = false ]; then
+                echo "  (not found after 3 attempts, skipping)"
+              fi
             done
           done
 

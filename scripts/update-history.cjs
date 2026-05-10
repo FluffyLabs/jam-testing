@@ -54,13 +54,25 @@ function main() {
   for (const [version, data] of Object.entries(aggregated)) {
     snapshot.versions[version] = {
       baseline: data.baseline,
-      teams: data.teams.map(t => ({
-        name: t.name,
-        score: t.score,
-        rank: t.rank,
-        metrics: t.metrics,
-        relativeToBaseline: t.relativeToBaseline,
-      })),
+      teams: data.teams.map(t => {
+        const entry = {
+          name: t.name,
+          score: t.score,
+          rank: t.rank,
+          metrics: t.metrics,
+          relativeToBaseline: t.relativeToBaseline,
+        };
+        if (t.benchmarkScores) {
+          entry.benchmarkScores = {};
+          for (const [bm, info] of Object.entries(t.benchmarkScores)) {
+            entry.benchmarkScores[bm] = {
+              score: info.score ?? null,
+              metrics: info.metrics || null,
+            };
+          }
+        }
+        return entry;
+      }),
     };
   }
 

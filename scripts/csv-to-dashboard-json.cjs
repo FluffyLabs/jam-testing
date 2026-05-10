@@ -152,25 +152,21 @@ function main() {
     converted++;
   }
 
-  // Fill in missing required benchmarks with placeholder values so
-  // teams with partial results still appear in the dashboard.
+  // Log teams with missing benchmarks (they will be excluded from aggregation)
   const teamDirs = fs.existsSync(versionDir)
     ? fs.readdirSync(versionDir).filter(d => fs.statSync(path.join(versionDir, d)).isDirectory())
     : [];
 
-  let filled = 0;
   for (const team of teamDirs) {
-    for (const bench of REQUIRED_BENCHMARKS) {
-      const benchFile = path.join(versionDir, team, `${bench}.json`);
-      if (!fs.existsSync(benchFile)) {
-        fs.writeFileSync(benchFile, JSON.stringify(makePlaceholderJson(team), null, 2));
-        console.log(`  ${team}/${bench}.json (placeholder) ✓`);
-        filled++;
-      }
+    const missing = REQUIRED_BENCHMARKS.filter(bench =>
+      !fs.existsSync(path.join(versionDir, team, `${bench}.json`))
+    );
+    if (missing.length > 0) {
+      console.log(`  ${team}: missing ${missing.join(', ')} — will be excluded from rankings`);
     }
   }
 
-  console.log(`\nConverted ${converted} benchmark files, filled ${filled} placeholders in ${versionDir}`);
+  console.log(`\nConverted ${converted} benchmark files in ${versionDir}`);
 }
 
 main();

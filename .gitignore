@@ -1,6 +1,8 @@
 /picofuzz-result
 /benchmark-report.md
 /docs/
+/artifacts/
+/fuzz-perf/
 
 # Logs
 logs
