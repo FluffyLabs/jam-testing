@@ -20,6 +20,6 @@ jobs:
       target_name: pyjamaz
       docker_image: 'jamdottech/pyjamaz:latest'
       docker_cmd: 'fuzzer target --db-path=/tmp/pyjamaz_fuzzer_db --socket-path={TARGET_SOCK}'
-      docker_memory: '8192m'
+      docker_memory: '4096m'
       spec: tiny
       mention: emielsebastiaan
