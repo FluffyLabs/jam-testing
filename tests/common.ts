@@ -1,5 +1,6 @@
 import type { ExecFileSyncOptions } from "node:child_process";
 import { execFileSync } from "node:child_process";
+import { CONTAINER_LABEL, registerContainer, uniqueName, unregisterContainer } from "./container-registry.js";
 import { ExternalProcess } from "./external-process.js";
 
 const SOCKET_PATH = "/shared/jam_target.sock";
@@ -52,6 +53,8 @@ const DOCKER_OPTIONS = (mem = "512m") => [
   "--stop-signal=SIGKILL",
   "--stop-timeout=5",
 ];
+
+const LABEL_ARGS = ["--label", CONTAINER_LABEL];
 
 export interface SourceConfig {
   name: string;
@@ -110,6 +113,21 @@ function docker(args: string[], options: ExecFileSyncOptions = {}) {
   return execFileSync("docker", args, options);
 }
 
+/**
+ * Run a short-lived `docker run --rm` helper with a tracked name so it gets
+ * force-removed on shutdown if it ever leaks (e.g. test runner SIGKILLed
+ * mid-call).
+ */
+function dockerRunHelper(role: string, args: string[], options: ExecFileSyncOptions = {}) {
+  const name = uniqueName(role);
+  registerContainer(name);
+  try {
+    return docker(["run", "--rm", "--name", name, ...LABEL_ARGS, ...args], options);
+  } finally {
+    unregisterContainer(name);
+  }
+}
+
 export function createSharedVolume(name = "") {
   const volumeName = `${SHARED_VOLUME}${name}`;
   // Clean up any existing volume and create a fresh one
@@ -122,9 +140,7 @@ export function createSharedVolume(name = "") {
 
   // Initialize the volume with proper permissions and prepare the
   // JAM_FUZZ_DATA_PATH directory used by standard target packaging.
-  docker([
-    "run",
-    "--rm",
+  dockerRunHelper("init", [
     "--network",
     "none",
     "-v",
@@ -172,10 +188,11 @@ async function waitForSocket(volumeName: string, maxWaitMs = 60_000): Promise<vo
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
     try {
-      docker(["run", "--rm", "--network", "none", "-v", `${volumeName}:/shared`, "alpine", "test", "-S", SOCKET_PATH], {
-        timeout: 5000,
-        stdio: "pipe",
-      });
+      dockerRunHelper(
+        "probe",
+        ["--network", "none", "-v", `${volumeName}:/shared`, "alpine", "test", "-S", SOCKET_PATH],
+        { timeout: 5000, stdio: "pipe" },
+      );
       // Socket exists, small delay for listen() to complete
       await new Promise((r) => setTimeout(r, 500));
       return;
@@ -191,10 +208,9 @@ async function waitForSocket(volumeName: string, maxWaitMs = 60_000): Promise<vo
  * Initialize starts from a clean cache, matching official testing behavior.
  */
 export function clearDataDir(volumeName: string) {
-  docker(
+  dockerRunHelper(
+    "cleardata",
     [
-      "run",
-      "--rm",
       "--network",
       "none",
       "-v",
@@ -209,10 +225,11 @@ export function clearDataDir(volumeName: string) {
 }
 
 export function chmodSocket(volumeName: string) {
-  docker(["run", "--rm", "--network", "none", "-v", `${volumeName}:/shared`, "alpine", "chmod", "777", SOCKET_PATH], {
-    timeout: 10_000,
-    stdio: "pipe",
-  });
+  dockerRunHelper(
+    "chmod",
+    ["--network", "none", "-v", `${volumeName}:/shared`, "alpine", "chmod", "777", SOCKET_PATH],
+    { timeout: 10_000, stdio: "pipe" },
+  );
 }
 
 export async function startTarget({
@@ -226,12 +243,17 @@ export async function startTarget({
 }) {
   const envArgs = buildTargetEnvArgs(config.env);
   const cmdArgs = buildCmdArgs(config.cmd);
+  const containerName = uniqueName(`target-${config.name}`);
 
-  const proc = ExternalProcess.spawn(
+  const proc = ExternalProcess.spawnWithContainer(
     config.name,
+    containerName,
     "docker",
     "run",
     "--rm",
+    "--name",
+    containerName,
+    ...LABEL_ARGS,
     ...envArgs,
     ...DOCKER_OPTIONS(config.memory),
     "-v",
@@ -261,11 +283,16 @@ export async function minifuzz({
   sharedVolume?: string;
   timeout: number;
 }) {
-  return ExternalProcess.spawn(
+  const containerName = uniqueName("minifuzz");
+  return ExternalProcess.spawnWithContainer(
     "minifuzz",
+    containerName,
     "docker",
     "run",
     "--rm",
+    "--name",
+    containerName,
+    ...LABEL_ARGS,
     "--network",
     "none",
     "-v",
@@ -297,12 +324,17 @@ export async function fuzzSource({
 }) {
   const cmdArgs = buildCmdArgs(config.cmd);
   const userArgs = config.user ? ["--user", config.user] : [];
+  const containerName = uniqueName(`source-${config.name}`);
 
-  return ExternalProcess.spawn(
+  return ExternalProcess.spawnWithContainer(
     config.name,
+    containerName,
     "docker",
     "run",
     "--rm",
+    "--name",
+    containerName,
+    ...LABEL_ARGS,
     ...userArgs,
     ...DOCKER_OPTIONS(config.memory),
     "-v",
@@ -327,11 +359,16 @@ export async function picofuzz({
   statsFile?: string;
   ignore?: string[];
 }) {
-  return ExternalProcess.spawn(
+  const containerName = uniqueName("picofuzz");
+  return ExternalProcess.spawnWithContainer(
     "picofuzz",
+    containerName,
     "docker",
     "run",
     "--rm",
+    "--name",
+    containerName,
+    ...LABEL_ARGS,
     "--network",
     "none",
     "-v",
