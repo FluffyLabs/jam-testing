@@ -14,3 +14,4 @@ jobs:
     with:
       target_name: gossamer
       docker_image: 'ghcr.io/chainsafe/go-jam:latest'
+      docker_memory: '8192m'
