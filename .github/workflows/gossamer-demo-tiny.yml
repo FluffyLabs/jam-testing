@@ -1,0 +1,24 @@
+name: "Demo (tiny): gossamer"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/gossamer-demo-tiny.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: gossamer
+      docker_image: 'ghcr.io/chainsafe/go-jam:latest'
+      docker_memory: '8192m'
+      spec: tiny
+      mention: aang114

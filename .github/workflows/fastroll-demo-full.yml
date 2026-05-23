@@ -1,0 +1,26 @@
+name: "Demo (full): fastroll"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/fastroll-demo-full.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: fastroll
+      docker_image: 'ghcr.io/fastroll-jam/fastroll:latest'
+      docker_memory: '8192m'
+      readiness_pattern: 'listening on'
+      spec: full
+      num_blocks: 500
+      mention: 0xjunha

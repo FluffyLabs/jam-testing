@@ -1,0 +1,24 @@
+name: "Demo (tiny): fastroll"
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/fastroll-demo-tiny.yml'
+      - '.github/workflows/demo-source.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  demo:
+    uses: ./.github/workflows/demo-source.yml
+    with:
+      target_name: fastroll
+      docker_image: 'ghcr.io/fastroll-jam/fastroll:latest'
+      readiness_pattern: 'listening on'
+      spec: tiny
+      mention: 0xjunha

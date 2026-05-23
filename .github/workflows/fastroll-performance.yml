@@ -1,0 +1,17 @@
+name: "Performance: fastroll"
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/fastroll-performance.yml'
+
+jobs:
+  test:
+    uses: ./.github/workflows/reusable-picofuzz.yml
+    with:
+      target_name: fastroll
+      docker_image: 'ghcr.io/fastroll-jam/fastroll:latest'
+      readiness_pattern: 'listening on'

@@ -1,0 +1,17 @@
+name: "Performance: gossamer"
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/gossamer-performance.yml'
+
+jobs:
+  test:
+    uses: ./.github/workflows/reusable-picofuzz.yml
+    with:
+      target_name: gossamer
+      docker_image: 'ghcr.io/chainsafe/go-jam:latest'
+      docker_memory: '8192m'
