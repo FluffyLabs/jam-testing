@@ -36,6 +36,16 @@ spec to run from the `JAM_FUZZ_SPEC` environment variable; the matching
 `--spec <value>` is also passed to the graymatter source command by the
 workflow.
 
+> **Note on demo fuzzing:** the scheduled `Demo (tiny)` / `Demo (full)`
+> runs have been suspended for all teams except `typeberry` and
+> `turbojam`. The official W3F self-fuzzing app is now available at
+> <https://fuzz.jamtoaster.network/>, which makes the per-team daily
+> demo runs in this repo redundant. The workflows are kept in place and
+> can still be triggered manually from the Actions tab
+> (`workflow_dispatch`) or by a PR that touches the workflow file, so
+> the demo badges below will reflect the most recent manual run rather
+> than a daily one.
+
 | Team | Performance | Demo (tiny) | Demo (full) | Long-run |
 |------|-------------|-------------|-------------|----------|
 | boka | [![Performance: boka](https://github.com/FluffyLabs/jam-testing/actions/workflows/boka-performance.yml/badge.svg)](https://github.com/FluffyLabs/jam-testing/actions/workflows/boka-performance.yml) | [![Demo (tiny): boka](https://github.com/FluffyLabs/jam-testing/actions/workflows/boka-demo-tiny.yml/badge.svg)](https://github.com/FluffyLabs/jam-testing/actions/workflows/boka-demo-tiny.yml) | [![Demo (full): boka](https://github.com/FluffyLabs/jam-testing/actions/workflows/boka-demo-full.yml/badge.svg)](https://github.com/FluffyLabs/jam-testing/actions/workflows/boka-demo-full.yml) | — |
@@ -164,15 +174,16 @@ connections on the Unix socket. Two modes are supported:
 
 3. **Create the two demo fuzz workflows.** One for `tiny`, one for `full`.
    Both rely on standard target packaging (env-only invocation); neither
-   should set `docker_cmd`:
+   should set `docker_cmd`. New teams should leave the `schedule:` trigger
+   out (see the "Note on demo fuzzing" above); the workflows are still
+   useful for manual `workflow_dispatch` runs and for validating changes
+   to the workflow files themselves via the `pull_request` filter:
 
    ```yaml
    # .github/workflows/myteam-demo-tiny.yml
    name: "Demo (tiny): myteam"
 
    on:
-     schedule:
-       - cron: '0 18 * * *'
      workflow_dispatch:
      pull_request:
        paths:
@@ -199,8 +210,6 @@ connections on the Unix socket. Two modes are supported:
    name: "Demo (full): myteam"
 
    on:
-     schedule:
-       - cron: '0 18 * * *'
      workflow_dispatch:
      pull_request:
        paths:
