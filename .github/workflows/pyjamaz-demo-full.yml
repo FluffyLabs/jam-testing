@@ -1,8 +1,6 @@
 name: "Demo (full): pyjamaz"
 
 on:
-  schedule:
-    - cron: '0 18 * * *'
   workflow_dispatch:
   pull_request:
     paths:
