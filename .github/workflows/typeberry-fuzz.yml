@@ -17,9 +17,9 @@ jobs:
       matrix:
         include:
           - spec: tiny
-            num_blocks: 5000
+            num_blocks: 100000
           - spec: full
-            num_blocks: 500
+            num_blocks: 100000
     uses: ./.github/workflows/graymatter-fuzz-source.yml
     with:
       target_name: typeberry
@@ -28,7 +28,7 @@ jobs:
       docker_env: 'JAM_LOG=log'
       readiness_pattern: 'PVM Backend'
       spec: ${{ matrix.spec }}
-      timeout_minutes: 30
+      timeout_minutes: 1380
       num_blocks: ${{ matrix.num_blocks }}
-      num_runs: 9
+      num_runs: 1
       mention: tomusdrw
