@@ -36,34 +36,8 @@ jobs:
       - name: Download latest picofuzz artifacts
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p artifacts
-          TARGETS=$(ls -d teams/*/ 2>/dev/null | xargs -n1 basename | tr '\n' ' ')
-          BENCHMARKS="fallback safrole storage storage_light"
-
-          for target in $TARGETS; do
-            for bench in $BENCHMARKS; do
-              ARTIFACT="picofuzz-csv-${target}-${bench}"
-              echo "Downloading ${ARTIFACT}..."
-              SUCCESS=false
-              for attempt in 1 2 3; do
-                if gh run download --repo "${{ github.repository }}" \
-                  --name "$ARTIFACT" \
-                  --dir "artifacts/${ARTIFACT}" 2>/dev/null; then
-                  SUCCESS=true
-                  break
-                fi
-                echo "  attempt $attempt failed, retrying in ${attempt}s..."
-                sleep "$attempt"
-              done
-              if [ "$SUCCESS" = false ]; then
-                echo "  (not found after 3 attempts, skipping)"
-              fi
-            done
-          done
-
-          echo "Downloaded artifacts:"
-          find artifacts -name '*.csv' | sort
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/download-latest-picofuzz-artifacts.cjs artifacts
 
       - name: Convert CSV to dashboard JSON
         run: |
