@@ -1,0 +1,33 @@
+name: "Fuzz: vinwolf"
+
+on:
+  schedule:
+    - cron: '30 18 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/vinwolf-fuzz.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  graymatter-source:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - spec: tiny
+            num_blocks: 175000
+          - spec: full
+            num_blocks: 17500
+    uses: ./.github/workflows/graymatter-fuzz-source.yml
+    with:
+      target_name: vinwolf
+      docker_image: 'ghcr.io/bloppan/vinwolf-target:latest'
+      spec: ${{ matrix.spec }}
+      timeout_minutes: 1380
+      num_blocks: ${{ matrix.num_blocks }}
+      num_runs: 10
+      mention: bloppan
